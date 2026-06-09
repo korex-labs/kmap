@@ -1,5 +1,5 @@
 [project]
-name = "kmap"
+name = "korex-labs-kmap"
 version = "1.0.0"
 description = "Kubernetes architecture map generator for Structurizr and LikeC4."
 readme = "README.md"
