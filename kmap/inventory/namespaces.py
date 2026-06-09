@@ -31,7 +31,7 @@ from .namespace_rows import (
     project_repository,
 )
 
-DEFAULT_CONFIG_DIR = SCHEMAS_ROOT / "tools" / "kmap" / "config"
+DEFAULT_CONFIG_DIR = SCHEMAS_ROOT / "config"
 DEFAULT_INVENTORY_DIR = SCHEMAS_ROOT / "Inventory"
 DEFAULT_NAMESPACES_INVENTORY_FILE = DEFAULT_INVENTORY_DIR / "namespaces.html"
 

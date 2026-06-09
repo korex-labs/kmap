@@ -8,7 +8,7 @@ from kmap.command import normalize as normalize_module
 from kmap.command import render as render_module
 from kmap.command.inspect import namespace as inspect_namespace_module
 from kmap.command.run_all import DEFAULT_ARCHITECTURE_FILE, DEFAULT_DEPENDENCIES_FILE, DEFAULT_REPORTS_DIR, run_all
-from kmap.command.run_all.core import INTERRUPTED_EXIT_CODE
+from kmap.command.run_all.core import INTERRUPTED_EXIT_CODE, inventory_args
 from kmap.command.run_all.discovery import (
     discovery_target_identity,
     parse_namespace_args,
@@ -17,6 +17,7 @@ from kmap.command.run_all.discovery import (
 )
 from kmap.inventory import buckets as inventory_buckets_module
 from kmap.inventory import namespaces as inventory_namespaces_module
+from kmap.paths import SCHEMAS_ROOT
 
 
 def _run_all_args():
@@ -56,6 +57,17 @@ def _run_all_args():
         likec4_common_path="../common",
         output="plain",
     )
+
+
+def test_inventory_args_default_to_cwd_project_layout_when_no_config_is_given():
+    args = _run_all_args()
+    args.config = ""
+
+    parsed = inventory_args(args)
+
+    assert parsed.config_dir == str(SCHEMAS_ROOT / "config")
+    assert parsed.bucket_artifacts_dir == "/tmp/buckets"
+    assert parsed.output_dir == "/tmp/Inventory"
 
 
 def test_run_all_wires_stages_and_derives_default_outputs(monkeypatch):

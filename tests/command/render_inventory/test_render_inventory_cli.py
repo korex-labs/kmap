@@ -3,6 +3,7 @@ import argparse
 from kmap.command.render_inventory.cli import add_render_inventory_parser
 from kmap.inventory.buckets import DEFAULT_BUCKET_REPORTS_DIR
 from kmap.inventory.namespaces import DEFAULT_CONFIG_DIR, DEFAULT_INVENTORY_DIR, render_inventory
+from kmap.paths import SCHEMAS_ROOT
 
 DEFAULT_INVENTORY_EXEC_TIMEOUT = 5
 CUSTOM_INVENTORY_EXEC_ATTEMPTS = 2
@@ -19,8 +20,11 @@ def test_add_render_inventory_parser_wires_defaults_and_function():
 
     assert args.command == "render-inventory"
     assert args.config_dir == str(DEFAULT_CONFIG_DIR)
+    assert args.config_dir == str(SCHEMAS_ROOT / "config")
     assert args.bucket_artifacts_dir == str(DEFAULT_BUCKET_REPORTS_DIR)
+    assert args.bucket_artifacts_dir == str(SCHEMAS_ROOT / "artifacts" / "buckets")
     assert args.output_dir == str(DEFAULT_INVENTORY_DIR)
+    assert args.output_dir == str(SCHEMAS_ROOT / "Inventory")
     assert args.full is False
     assert args.cluster == ""
     assert args.fragment_id == ""
