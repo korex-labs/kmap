@@ -1,0 +1,20 @@
+# kmap-local scratch and tool output.
+#
+# Keep transient QA/build artifacts under .tmp/ when the tool supports it.
+# Python packaging metadata can still appear at the project root during editable installs.
+
+.tmp/
+.env
+
+__pycache__/
+*.py[cod]
+
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+*.egg-info/
+build/
+dist/

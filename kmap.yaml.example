@@ -1,0 +1,47 @@
+view:
+  likec4_image: likec4/likec4
+  structurizr_image: structurizr/structurizr
+  structurizr_args: local
+
+recommendations:
+  resources:
+    required:
+      - repo
+    optional:
+      - k8s
+      - logs
+      - sentry
+      - grafana_k8s
+      - grafana
+      - pmm
+      - alertmanager
+      - karma
+      - tasks
+      - chat
+
+inventory:
+  repositories:
+    enabled: false
+    provider: gitlab
+    base_url: https://gitlab.example.com
+    token_env: GITLAB_TOKEN
+  storage_type_labels:
+    - match: 's3[.-](?P<region>[a-z0-9-]+)[.]amazonaws[.]com'
+      label: 'S3 ({region})'
+    - match: 'ceph'
+      label: 'Ceph'
+  namespace_heuristics:
+    project_id_suffix:
+      enabled: true
+      pattern: '[-](?P<project_id>\d+)$'
+      repository_format: 'repository:{project_id}'
+    strip_project_id_suffix: true
+    stage_tokens:
+      - prod
+      - stage
+      - staging
+      - dev
+      - review
+      - sandbox
+      - test
+      - qa

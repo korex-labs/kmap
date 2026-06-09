@@ -1,0 +1,57 @@
+# Shared external dependency grouping for kmap.
+#
+# Product configs can still define `external_mappings`; product mappings are evaluated before
+# these common mappings.
+
+external_mappings:
+  - name: Database (MySQL)
+    match:
+      - mysql
+      - mariadb
+
+  - name: Database (PostgreSQL)
+    match:
+      - postgres
+      - postgresql
+      - pgsql
+
+  - name: Database (Mongo)
+    match:
+      - mongo
+
+  - name: Database (CH)
+    match:
+      - clickhouse
+
+  - name: Kafka
+    match:
+      - kafka
+
+  - name: NATS
+    match:
+      - nats
+
+  - name: Vault
+    match:
+      - vault
+
+  - name: Redis
+    match:
+      - redis
+
+  - name: Redash
+    match:
+      - redash
+
+  - name: Amazon S3
+    match_regex:
+      - '(^|[.])[a-z0-9.-]*s3[.-][a-z0-9-]+[.]amazonaws[.]com$'
+
+  - name: Servers.com Object Storage
+    match_regex:
+      - '(^|[.])[a-z0-9-]*files[.][a-z0-9-]+[.]cloud[.]servers[.]com(?::[0-9]+)?$'
+
+  - name: Example Public API
+    element_type: External_API
+    match:
+      - api.example.com

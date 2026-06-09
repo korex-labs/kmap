@@ -1,0 +1,110 @@
+# Full kmap product config example.
+#
+# Copy this file to config/<product>.yaml and adjust values for your product.
+# Values below are examples only.
+
+# Product identity.
+org: web
+product: example-product
+title: Example Product
+env: prod
+data_mode: sanitized
+render: both
+
+# Kubernetes discovery target.
+#
+# kmap reads the default context from product config. The CLI may still override
+# kubeconfig path with --kubeconfig for local runs.
+discovery:
+  context: example-prod
+  kubeconfig: ~/.kube/example-prod
+
+# Product-level ownership.
+#
+# owner_team is the DevOps team responsible for operating/supporting this product.
+# Generated project metadata inherits this value, so do not repeat owner_team in every project
+# unless a future documented exception explicitly requires it.
+owner_team: Example DevOps Team
+domain: Payments
+description: Example product architecture generated from Kubernetes.
+tags:
+  - generated
+  - example
+
+# Kubernetes namespaces that belong to this product.
+#
+# The namespace key is the real Kubernetes namespace. The nested project metadata is optional.
+# If project.name is omitted, kmap infers the project name from the namespace.
+# project.domain_team is the developer/domain team responsible for the specific repository.
+namespaces:
+  example-api-prod-1234:
+    project:
+      title: Example API
+      element_type: API
+      domain_team: API Developers
+      description: Our public API example.
+      tags:
+        - backend
+        - api
+    resources:
+      repo: https://git.example.com/example-api.git
+      tasks: https://tasks.example.com/project/EXMPL/
+      logs: https://logs.example.com/?dashboard=123
+      zabbix: https://monitoring.example.com/?watchme=here
+      chat: https://chat.example.com/#/chat/123
+
+  example-worker-prod-5678:
+    project:
+      title: Example Worker
+      domain_team: API Developers
+      description: Background worker for asynchronous jobs.
+      tags:
+        - backend
+        - worker
+    resources:
+      repo: https://git.example.com/example-worker.git
+      tasks: https://tasks.example.com/project/WRKR/
+
+  example-admin-prod-9012:
+    discovery:
+      context: example-admin-prod
+      kubeconfig: ~/.kube/example-admin-prod
+
+# Product-specific external dependency grouping.
+#
+# Shared infrastructure mappings live in config/common/external_mappings.yaml and are
+# loaded automatically after product mappings. Keep only product-specific domains/APIs here.
+external_mappings:
+  - name: Website
+    match:
+      - example.com
+      - example.org
+
+  - name: Partner API
+    element_type: External_API
+    match:
+      - partner-api.example.com
+
+# Fallback naming rules for workloads without the app_service annotation.
+#
+# If app_service exists, kmap uses it as-is for the system name.
+system_naming:
+  fallback:
+    enabled: true
+    strip_prefix_tokens:
+      - release
+    strip_suffix_tokens:
+      - canary
+    collapse_project_wrapped_names: true
+    rewrites:
+      - match_regex: '^worker-(.*)$'
+        replace: '\1'
+
+# Dependency hotspot generation.
+#
+# These settings control which highly referenced nodes are emphasized in generated views and docs.
+dependency_hotspots:
+  enabled: true
+  metric: incoming_distinct_source_container_count
+  min_count: 3
+  max_hotspots: 15

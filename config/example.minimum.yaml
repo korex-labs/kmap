@@ -1,0 +1,16 @@
+# Minimum kmap product config example.
+#
+# Copy this file to config/<product>.yaml and replace the example values.
+# This is enough to try kmap and generate Structurizr/LikeC4 output. Add project metadata,
+# resources, external mappings and naming rules later as the product config matures.
+
+org: web
+product: example-product
+title: Example Product
+env: prod
+data_mode: sanitized
+owner_team: Example DevOps Team
+
+namespaces:
+  example-api-prod-1234: {}
+  example-worker-prod-5678: {}
