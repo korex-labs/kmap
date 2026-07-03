@@ -1,5 +1,7 @@
 from argparse import Namespace
 
+import pytest
+
 from kmap import cli
 
 KEYBOARD_INTERRUPT_EXIT_CODE = 130
@@ -19,3 +21,10 @@ def test_main_handles_keyboard_interrupt_without_traceback(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "interrupted" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_numeric_parser_helpers_reject_invalid_values():
+    with pytest.raises(cli.argparse.ArgumentTypeError, match="expected a non-negative number"):
+        cli.parse_non_negative_float("-1")
+    with pytest.raises(cli.argparse.ArgumentTypeError, match="expected a positive integer"):
+        cli.parse_positive_int("bad")

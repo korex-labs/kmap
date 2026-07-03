@@ -267,6 +267,42 @@ def test_validate_config_shape_reports_namespace_entry_errors_and_warnings():
     assert "namespaces.api.unexpected: unknown namespace config key" in warnings
 
 
+def test_validate_config_shape_handles_empty_namespace_entry_variants():
+    errors, _warnings = validate_config_shape(
+        {
+            "product": "demo",
+            "title": "Demo",
+            "env": "prod",
+            "owner_team": "Team",
+            "namespaces": {
+                "empty": None,
+                "blank-project": "",
+            },
+        }
+    )
+
+    assert "namespaces.blank-project: project name must not be empty" in errors
+    assert "namespaces.empty" not in "\n".join(errors)
+
+
+def test_validate_config_shape_reports_top_level_shape_errors():
+    errors, _warnings = validate_config_shape(
+        {
+            "product": "demo",
+            "title": "Demo",
+            "env": "prod",
+            "owner_team": "Team",
+            "namespaces": "api",
+            "projects": "bad",
+            "system_naming": {"service_aliases": {"rewrites": [{"match_regex": "[", "replace": "api"}]}},
+        }
+    )
+
+    assert "namespaces: expected mapping or list" in errors
+    assert "projects: expected mapping" in errors
+    assert "system_naming.service_aliases.rewrites[0].match_regex: invalid regex:" in "\n".join(errors)
+
+
 def test_validate_config_shape_reports_product_resource_errors():
     errors, _warnings = validate_config_shape(
         {
