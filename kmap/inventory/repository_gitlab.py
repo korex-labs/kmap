@@ -1,5 +1,6 @@
 """GitLab repository catalog fetching."""
 
+import json
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -51,8 +52,6 @@ def fetch_gitlab_json_page(url: str, token: str) -> tuple[Any, int]:
 
 
 def load_json_bytes(raw: bytes, *, source: str) -> Any:
-    import json
-
     try:
         return json.loads(raw.decode("utf-8"))
     except json.JSONDecodeError as exc:

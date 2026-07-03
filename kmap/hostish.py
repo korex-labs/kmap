@@ -9,8 +9,8 @@ VALID_HOST_RE = re.compile(
     r"(?::(?P<port>\d{1,5}))?"
     r"(?P<path>/.*)?$"
 )
-BRANCHY_VALUE_RE = re.compile(r"(^|[-_.])(test|release|qa|dev)([-_.]|$)", re.I)
-DURATION_VALUE_RE = re.compile(r"^\d+(?:ms|s|m|h)$", re.I)
+BRANCHY_VALUE_RE = re.compile(r"(^|[-_.])(test|release|qa|dev)([-_.]|$)", re.IGNORECASE)
+DURATION_VALUE_RE = re.compile(r"^\d+(?:ms|s|m|h)$", re.IGNORECASE)
 MAX_PORT = 65535
 REJECTED_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 REJECTED_SCALAR_VALUES = {"true", "false", "yes", "no", "on", "off", "null", "none"}

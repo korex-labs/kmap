@@ -397,6 +397,16 @@ def test_docker_run_captures_output_without_checking(monkeypatch):
     assert calls == [(["docker", "ps"], {"check": False, "text": True, "capture_output": True})]
 
 
+def test_docker_run_reports_missing_executable(monkeypatch):
+    def missing_docker(cmd, **kwargs):
+        raise FileNotFoundError(cmd[0])
+
+    monkeypatch.setattr(subprocess, "run", missing_docker)
+
+    with pytest.raises(SystemExit, match="Docker executable not found: missing-docker"):
+        docker_module.docker_run(["missing-docker", "ps"])
+
+
 def test_docker_container_using_port_handles_failures_and_misses(monkeypatch):
     monkeypatch.setattr(docker_module, "docker_run", lambda cmd: completed(returncode=1))
 

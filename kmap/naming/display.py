@@ -1,7 +1,7 @@
 """Display labels, descriptions, and visual naming helpers."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..config import clean_metadata_string, slug_name
 from ..identifiers import architecture_id_part, ident
@@ -38,7 +38,7 @@ def display_container_name(service_name: str) -> str:
     raw = (service_name or "").strip()
     if not raw:
         return "Workload"
-    normalized = re.sub(r"^(prod|production|stage|staging|dev|test|qa|main)-", "", raw, flags=re.I)
+    normalized = re.sub(r"^(prod|production|stage|staging|dev|test|qa|main)-", "", raw, flags=re.IGNORECASE)
     return humanize_slug(normalized)
 
 
@@ -50,8 +50,9 @@ def display_title_from_discovered_name_with_context(
     raw: str,
     product_name: str = "",
     project_name: str = "",
-    product_metadata: Optional[Dict[str, Any]] = None,
+    product_metadata: dict[str, Any] | None = None,
 ) -> str:
+    _ = project_name
     parts = [p for p in re.split(r"[-_.\s]+", raw or "") if p]
     if not parts:
         return raw or ""
@@ -65,7 +66,7 @@ def display_title_from_discovered_name_with_context(
     ):
         remove_anywhere_tokens.update(slug_parts(clean_metadata_string(value)))
 
-    cleaned: List[str] = []
+    cleaned: list[str] = []
     for part in parts:
         part_key = architecture_id_part(part)
         if not cleaned and part_key in remove_edge_tokens:
@@ -95,7 +96,7 @@ def container_display_qualifier(service_name: str) -> str:
 
     parts = [p for p in re.split(r"[-_.]+", raw) if p]
     env_tokens = {"prod", "production", "stage", "staging", "dev", "test", "qa", "uat", "main"}
-    qualifiers: List[str] = []
+    qualifiers: list[str] = []
 
     for part in parts:
         lower = part.lower()
@@ -112,7 +113,7 @@ def container_display_qualifier(service_name: str) -> str:
     return slug_name(raw)[-12:]
 
 
-def container_description(svc: Dict[str, Any], inbound_count: int = 0) -> str:
+def container_description(svc: dict[str, Any], inbound_count: int = 0) -> str:
     parts = []
     namespace = (svc.get("namespace") or "").strip()
     workload = (svc.get("service_name") or "").strip()
@@ -139,7 +140,7 @@ def view_key_suffix(project_name: str) -> str:
     return ident(project_name or "system")
 
 
-def dependency_heat_tag(inbound_count: int) -> Optional[str]:
+def dependency_heat_tag(inbound_count: int) -> str | None:
     if inbound_count <= 0:
         return None
     if inbound_count <= HEAT_LEVEL_1_MAX:

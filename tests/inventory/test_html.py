@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from kmap.inventory.html import (
     InventoryPageContext,
@@ -34,7 +34,7 @@ def test_render_inventory_page_builds_shared_page_shell():
     rendered = render_inventory_page(
         page_title="Inventory <All>",
         summary="2 rows <ok>",
-        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=UTC),
         nav_links=[("namespaces.html", "Namespaces")],
         extra_styles=["    main { width: 100%; }"],
         stats=[(2, "Rows"), (1, "Missing <things>")],

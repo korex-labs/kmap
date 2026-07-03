@@ -3,6 +3,8 @@
 import re
 from typing import Any
 
+from .validators import unknown_key_errors
+
 VIEW_CONFIG_KEYS = {"likec4_image", "structurizr_args", "structurizr_image"}
 TOOL_CONFIG_KEYS = {"inventory", "recommendations", "view"}
 INVENTORY_CONFIG_KEYS = {"namespace_heuristics", "repositories", "storage_type_labels"}
@@ -28,12 +30,6 @@ def validate_tool_config(config: dict[str, Any]) -> list[str]:
     errors.extend(unknown_key_errors(view, VIEW_CONFIG_KEYS, "view"))
     errors.extend(string_field_errors(view, VIEW_CONFIG_KEYS, "view"))
     return errors
-
-
-def unknown_key_errors(config: dict[str, Any], known_keys: set[str], path: str, label: str = "") -> list[str]:
-    prefix = f"{path}." if path else ""
-    key_label = label or (f"{path} config key" if path else "kmap config key")
-    return [f"{prefix}{key}: unknown {key_label}" for key in sorted(set(config) - known_keys)]
 
 
 def string_field_errors(config: dict[str, Any], keys: set[str] | tuple[str, ...], path: str) -> list[str]:

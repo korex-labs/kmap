@@ -1,6 +1,6 @@
 """Kubernetes pod scheduling metadata."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ..config import clean_metadata_string
 from .metadata_values import metadata_scalar_fields, pod_spec
@@ -12,9 +12,9 @@ SCHEDULING_SCALAR_FIELDS = (
 )
 
 
-def workload_scheduling_context(workload: Dict[str, Any]) -> Dict[str, str]:
+def workload_scheduling_context(workload: dict[str, Any]) -> dict[str, str]:
     spec = pod_spec(workload)
-    out: Dict[str, str] = metadata_scalar_fields(spec, SCHEDULING_SCALAR_FIELDS)
+    out: dict[str, str] = metadata_scalar_fields(spec, SCHEDULING_SCALAR_FIELDS)
     node_selector = scheduling_map_summary(spec.get("nodeSelector") or {})
     if node_selector:
         out["node_selector"] = node_selector
@@ -33,17 +33,17 @@ def workload_scheduling_context(workload: Dict[str, Any]) -> Dict[str, str]:
     return out
 
 
-def scheduling_map_summary(values: Dict[str, Any]) -> str:
+def scheduling_map_summary(values: dict[str, Any]) -> str:
     parts = []
-    for key, value in sorted((values or {}).items()):
-        key = clean_metadata_string(key)
-        value = clean_metadata_string(value)
+    for raw_key, raw_value in sorted((values or {}).items()):
+        key = clean_metadata_string(raw_key)
+        value = clean_metadata_string(raw_value)
         if key and value:
             parts.append(f"{key}={value}")
     return ", ".join(parts)
 
 
-def toleration_summaries(tolerations: List[Dict[str, Any]]) -> List[str]:
+def toleration_summaries(tolerations: list[dict[str, Any]]) -> list[str]:
     out = []
     for toleration in tolerations or []:
         key = clean_metadata_string(toleration.get("key")) or "*"
@@ -59,7 +59,7 @@ def toleration_summaries(tolerations: List[Dict[str, Any]]) -> List[str]:
     return sorted(set(out))
 
 
-def affinity_summary(affinity: Dict[str, Any]) -> str:
+def affinity_summary(affinity: dict[str, Any]) -> str:
     parts = []
     for key, label in (
         ("nodeAffinity", "node"),
@@ -71,7 +71,7 @@ def affinity_summary(affinity: Dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
-def topology_spread_summary(constraints: List[Dict[str, Any]]) -> str:
+def topology_spread_summary(constraints: list[dict[str, Any]]) -> str:
     out = []
     for constraint in constraints or []:
         topology_key = clean_metadata_string(constraint.get("topologyKey"))

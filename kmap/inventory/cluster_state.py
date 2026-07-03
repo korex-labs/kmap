@@ -8,7 +8,15 @@ from ..io import dump_json, ensure_dir, load_required_json_file
 from .buckets import BucketUsageRow, bucket_row_dict
 from .cluster_fragments import CLUSTER_INVENTORY_SCHEMA_VERSION, namespace_row_dict
 from .namespaces import InventoryRow
-from .row_payloads import BucketRowPayload, SerializedRow, normalize_string_dict, row_quality
+from .row_payloads import (
+    BucketRowPayload,
+    SerializedRow,
+    bucket_key,
+    bucket_sort_key,
+    normalize_string_dict,
+    row_quality,
+)
+from .schema import require_schema_version
 
 
 def write_namespace_state_files(
@@ -75,7 +83,7 @@ def namespace_state_payload(
     current_namespace = namespace_row_dict(namespace_row)
     existing_namespace = normalize_string_dict(existing.get("namespace") or {})
     best_namespace = (
-        current_namespace
+        current_namespace_with_existing_labels(current_namespace, existing_namespace)
         if row_quality(current_namespace) >= row_quality(existing_namespace)
         else {
             **existing_namespace,
@@ -96,10 +104,20 @@ def namespace_state_payload(
     }
 
 
+def current_namespace_with_existing_labels(current: SerializedRow, existing: SerializedRow) -> SerializedRow:
+    if current.get("labels") or not existing.get("labels"):
+        return current
+    return {**current, "labels": existing["labels"]}
+
+
 def load_namespace_state(path: Path) -> SerializedRow:
     payload = load_required_json_file(path)
-    if int(payload.get("schema_version") or 0) != CLUSTER_INVENTORY_SCHEMA_VERSION:
-        raise SystemExit(f"Unsupported cluster namespace state schema version in {path}")
+    require_schema_version(
+        payload,
+        expected=CLUSTER_INVENTORY_SCHEMA_VERSION,
+        source=path,
+        kind="cluster namespace state",
+    )
     return payload
 
 
@@ -131,22 +149,7 @@ def merge_bucket_dicts(rows: list[SerializedRow]) -> list[SerializedRow]:
         merged[bucket_key(row)] = row
     return sorted(
         merged.values(),
-        key=lambda row: (
-            row.get("bucket", ""),
-            row.get("endpoint", ""),
-            row.get("namespace", ""),
-            row.get("repository", ""),
-        ),
-    )
-
-
-def bucket_key(row: SerializedRow) -> tuple[str, str, str, str, str]:
-    return (
-        row.get("namespace", "").lower(),
-        row.get("repository", "").lower(),
-        row.get("bucket", "").lower(),
-        row.get("endpoint", "").lower(),
-        row.get("source_var", "").lower(),
+        key=bucket_sort_key,
     )
 
 

@@ -10,6 +10,7 @@ from .types import generated_external_category, normalized_likec4_external_type
 
 
 def external_dependency_tag(dep_key: str) -> str:
+    _ = dep_key
     return "External System"
 
 
@@ -115,7 +116,7 @@ def compiled_mapping_regexes(item: Dict[str, Any]) -> List[re.Pattern]:
     regexes = []
     for raw in item.get("match_regex") or []:
         try:
-            regexes.append(re.compile(str(raw), re.I))
+            regexes.append(re.compile(str(raw), re.IGNORECASE))
         except re.error:
             continue
     return regexes
@@ -134,6 +135,7 @@ def external_mapping_for_key(dep_key: str, mappings: List[Dict[str, Any]]) -> Op
 
 
 def external_mapping_should_aggregate(mapping: Optional[Dict[str, Any]], dep_key: str = "") -> bool:
+    _ = dep_key
     if not mapping:
         return False
     if "aggregate" in mapping:

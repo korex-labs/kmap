@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from typing import Any
 
 from ..io import dump_json, ensure_dir
 from ..logging import eprint
@@ -17,7 +18,7 @@ def normalize_architecture(args) -> int:
     return 0
 
 
-def _architecture_model_from_reports(args):
+def _architecture_model_from_reports(args) -> dict[str, Any]:
     package = sys.modules.get("kmap.model")
     builder = getattr(package, "architecture_model_from_reports", architecture_model_from_reports)
     return builder(args)

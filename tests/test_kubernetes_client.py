@@ -236,6 +236,9 @@ def test_request_timeout_seconds_parses_kubernetes_timeout_values():
     assert request_timeout_seconds("2m") == 120
     assert request_timeout_seconds("7") == 7
     assert request_timeout_seconds("bad") == 15
+    assert request_timeout_seconds("badms") == 15
+    assert request_timeout_seconds("nan") == 15
+    assert request_timeout_seconds("inf") == 15
 
 
 def test_kubectl_exec_places_namespace_after_exec_target(monkeypatch):

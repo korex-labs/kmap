@@ -1,7 +1,9 @@
 """Bucket inventory row model and merge helpers."""
 
-import re
 from dataclasses import dataclass, replace
+
+from ...inspection.bucket_family import bucket_source_family_name
+from ..row_payloads import BucketRowPayload
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,27 @@ class BucketUsageRow:
     product_title: str = ""
     last_seen_at: str = ""
     repository_archived: str = ""
+
+
+def bucket_usage_row_from_payload(row: BucketRowPayload, *, fallback_cluster: str = "") -> BucketUsageRow:
+    return BucketUsageRow(
+        bucket=row.get("bucket", ""),
+        endpoint=row.get("endpoint", ""),
+        confidence=row.get("confidence", ""),
+        cluster=row.get("cluster", "") or fallback_cluster,
+        product=row.get("product", ""),
+        namespace=row.get("namespace", ""),
+        project=row.get("project", ""),
+        workload=row.get("workload", ""),
+        source=row.get("source", ""),
+        source_var=row.get("source_var", ""),
+        repository=row.get("repository", ""),
+        owner_team=row.get("owner_team", ""),
+        report_key=row.get("report_key", ""),
+        product_title=row.get("product_title", ""),
+        last_seen_at=row.get("last_seen_at", ""),
+        repository_archived=row.get("repository_archived", ""),
+    )
 
 
 def sort_bucket_usage_rows(rows: list[BucketUsageRow]) -> list[BucketUsageRow]:
@@ -112,13 +135,7 @@ def bucket_source_families(source_var: str) -> set[str]:
 
 
 def bucket_source_family(source_var: str) -> str:
-    tokens = [token for token in re.split(r"_+", source_var.upper()) if token]
-    cut_tokens = []
-    for token in tokens:
-        if token in {"BASE", "BUCKET", "ENDPOINT", "HOST", "NAME", "URL", "URI"}:
-            break
-        cut_tokens.append(token)
-    return "_".join(cut_tokens)
+    return bucket_source_family_name(source_var)
 
 
 def bucket_row_dict(row: BucketUsageRow) -> dict[str, str]:
@@ -153,6 +170,7 @@ __all__ = [
     "bucket_source_families",
     "bucket_source_family",
     "bucket_usage_merge_key",
+    "bucket_usage_row_from_payload",
     "bucket_usage_row_quality",
     "confidence_rank",
     "merge_bucket_usage_row",

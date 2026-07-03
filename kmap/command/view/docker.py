@@ -10,7 +10,10 @@ DOCKER_PORTS_FORMAT = "{{.Names}}\t{{.Ports}}"
 
 
 def docker_run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, check=False, text=True, capture_output=True)
+    try:
+        return subprocess.run(cmd, check=False, text=True, capture_output=True)
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Docker executable not found: {cmd[0]}") from exc
 
 
 def docker_error_message(result: subprocess.CompletedProcess[str], fallback: str) -> str:

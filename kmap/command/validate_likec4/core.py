@@ -1,6 +1,7 @@
 """Command entrypoint for LikeC4 validation."""
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -34,7 +35,7 @@ def validate_likec4(args: argparse.Namespace) -> int:
     return rc
 
 
-def _run_likec4_validate(docker: str, image: str, mount_root: Path, project: str):
+def _run_likec4_validate(docker: str, image: str, mount_root: Path, project: str) -> subprocess.CompletedProcess[str]:
     package = sys.modules.get("kmap.command.validate_likec4")
     runner = getattr(package, "run_likec4_validate", run_likec4_validate)
     return runner(docker, image, mount_root, project)

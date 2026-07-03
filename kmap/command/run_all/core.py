@@ -131,7 +131,7 @@ def inventory_args(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def config_dir_for_args(args: argparse.Namespace) -> Path:
-    return Path(args.config).parent if getattr(args, "config", "") else Path("")
+    return Path(args.config).parent if getattr(args, "config", "") else Path()
 
 
 __all__ = [

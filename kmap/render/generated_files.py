@@ -18,7 +18,10 @@ def _safe_model_relative_path(relative: str) -> bool:
 def remove_generated_file(path: Path) -> None:
     if not path.exists() or not path.is_file():
         return
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return
     if "Generated" in text and "kmap" in text:
         path.unlink()
 

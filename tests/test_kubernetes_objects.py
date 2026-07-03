@@ -89,8 +89,12 @@ def test_container_port_labels_formats_defaults_and_skips_missing_ports():
 
 def test_configmap_secret_object_maps_and_workload_id_helpers():
     assert configmap_data({"data": {"PORT": 8080}}) == {"PORT": "8080"}
+    assert configmap_data({"data": ["bad"]}) == {}
     assert decode_secret_data({"data": {"TOKEN": "dmFsdWU="}}) == {"TOKEN": "value"}
     assert decode_secret_data({"data": {"TOKEN": "not-base64"}}) == {}
+    assert decode_secret_data({"data": {"TOKEN": "dmFsdWU"}}) == {}
+    assert decode_secret_data({"data": {"TOKEN": object()}}) == {}
+    assert decode_secret_data({"data": ["bad"]}) == {}
     assert item_map({"items": [{"metadata": {"name": "api"}}, {"metadata": {}}]}) == {
         "api": {"metadata": {"name": "api"}}
     }

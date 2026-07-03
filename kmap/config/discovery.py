@@ -1,11 +1,11 @@
 """Discovery target config normalization."""
 
-from typing import Any, Dict
+from typing import Any
 
 from .metadata import clean_metadata_string
 
 
-def _discovery_target(raw_target: Any) -> Dict[str, str]:
+def _discovery_target(raw_target: Any) -> dict[str, str]:
     if not isinstance(raw_target, dict):
         return {}
     item = {
@@ -15,7 +15,7 @@ def _discovery_target(raw_target: Any) -> Dict[str, str]:
     return {key: value for key, value in item.items() if value}
 
 
-def normalize_discovery_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_discovery_config(config: dict[str, Any]) -> dict[str, Any]:
     raw = config.get("discovery") or {}
     if not isinstance(raw, dict):
         raw = {}
@@ -25,7 +25,7 @@ def normalize_discovery_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def namespace_discovery_targets(raw_namespaces: Any) -> Dict[str, Dict[str, str]]:
+def namespace_discovery_targets(raw_namespaces: Any) -> dict[str, dict[str, str]]:
     namespaces = {}
     if not isinstance(raw_namespaces, dict):
         return namespaces
@@ -39,11 +39,12 @@ def namespace_discovery_targets(raw_namespaces: Any) -> Dict[str, Dict[str, str]
 
 
 def resolve_discovery_target(
-    discovery_config: Dict[str, Any],
+    discovery_config: dict[str, Any],
     namespace: str,
     project: str,
     kubeconfig_override: str = "",
-) -> Dict[str, str]:
+) -> dict[str, str]:
+    _ = project
     discovery_config = discovery_config or {}
     resolved = _discovery_target(discovery_config)
     resolved.update(_namespace_discovery_target(discovery_config, namespace))
@@ -53,12 +54,12 @@ def resolve_discovery_target(
     return {key: value for key, value in resolved.items() if value}
 
 
-def _namespace_discovery_target(discovery_config: Dict[str, Any], namespace: str) -> Dict[str, str]:
+def _namespace_discovery_target(discovery_config: dict[str, Any], namespace: str) -> dict[str, str]:
     namespace_target = (discovery_config.get("namespaces") or {}).get(namespace) or {}
     return clean_discovery_target_values(namespace_target)
 
 
-def clean_discovery_target_values(target: Dict[str, Any]) -> Dict[str, str]:
+def clean_discovery_target_values(target: dict[str, Any]) -> dict[str, str]:
     return {key: clean_metadata_string(value) for key, value in target.items() if value}
 
 

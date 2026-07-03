@@ -1,5 +1,6 @@
 """Local .env loading for kmap command defaults."""
 
+import os
 from pathlib import Path
 
 from .paths import KMAP_DIR, SCHEMAS_ROOT
@@ -15,8 +16,6 @@ def load_dotenv_files(paths: tuple[Path, ...] = DEFAULT_ENV_FILES) -> None:
 
 
 def load_dotenv_file(path: Path) -> None:
-    import os
-
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         key, value = parse_dotenv_line(raw_line)
         if key and value and key not in os.environ:

@@ -1,12 +1,13 @@
 """Dependency candidate dedupe policy."""
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-DEPENDENCY_SOURCE_RANK = {"VaultEnv": 4, "Env": 3, "Secret": 2, "ConfigMap": 1}
+from ..source_rank import SOURCE_RANK as DEPENDENCY_SOURCE_RANK
+from ..source_rank import source_rank
 
 
-def dedupe_dependency_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    best: Dict[Tuple[str, str], Dict[str, Any]] = {}
+def dedupe_dependency_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    best: dict[tuple[str, str], dict[str, Any]] = {}
     for candidate in candidates:
         dedupe_key = dependency_candidate_dedupe_key(candidate)
         existing = best.get(dedupe_key)
@@ -18,15 +19,15 @@ def dedupe_dependency_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[
     return sorted(best.values(), key=dependency_candidate_sort_key)
 
 
-def dependency_candidate_dedupe_key(candidate: Dict[str, Any]) -> Tuple[str, str]:
+def dependency_candidate_dedupe_key(candidate: dict[str, Any]) -> tuple[str, str]:
     return (candidate.get("var") or "", candidate.get("key") or "")
 
 
-def dependency_candidate_source_rank(candidate: Dict[str, Any]) -> int:
-    return DEPENDENCY_SOURCE_RANK.get(candidate.get("source"), 0)
+def dependency_candidate_source_rank(candidate: dict[str, Any]) -> int:
+    return source_rank(candidate.get("source"))
 
 
-def dependency_candidate_sort_key(candidate: Dict[str, Any]) -> Tuple[str, str]:
+def dependency_candidate_sort_key(candidate: dict[str, Any]) -> tuple[str, str]:
     return (candidate.get("var") or "", candidate.get("key") or "")
 
 

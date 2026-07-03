@@ -71,25 +71,38 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = [
+  "A",
+  "ANN201",
+  "ANN202",
+  "ANN204",
+  "ARG001",
   "B",
+  "BLE",
   "C4",
   "E4",
   "E7",
   "E9",
   "F",
+  "FURB",
   "I",
   "PERF",
+  "PLC0206",
+  "PTH",
+  "PLW0108",
+  "PLW2901",
   "PT",
   "RET",
   "RUF",
   "SIM",
+  "UP017",
+  "UP034",
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["kmap"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["PLR2004", "PLR6301"]
+"tests/**/*.py" = ["ANN", "ARG", "PLR2004", "PLR6301"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 8

@@ -56,7 +56,7 @@ def workload_security_context(workload: Dict[str, Any]) -> Dict[str, str]:
     out["service_account"] = service_account
     out.update(metadata_bool_fields(spec, POD_SECURITY_BOOL_FIELDS))
     out.update(metadata_bool_or_scalar_fields(security_context, POD_SECURITY_CONTEXT_FIELDS))
-    seccomp_type = metadata_scalar(((security_context.get("seccompProfile") or {}).get("type")))
+    seccomp_type = metadata_scalar((security_context.get("seccompProfile") or {}).get("type"))
     if seccomp_type:
         out["pod_seccomp_profile"] = seccomp_type
     return out

@@ -1,9 +1,12 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+import pytest
 
 from kmap.inventory.buckets import BucketUsageRow
 from kmap.inventory.cluster_state import (
     bucket_rows_by_namespace,
+    load_namespace_state,
     merge_bucket_dicts,
     namespace_state_path,
     write_namespace_state_files,
@@ -15,7 +18,7 @@ def test_write_namespace_state_files_writes_one_file_per_namespace_with_last_see
     written = write_namespace_state_files(
         output_dir=tmp_path / "Inventory",
         cluster="cluster-a",
-        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=UTC),
         namespace_rows=[
             InventoryRow(
                 cluster="cluster-a",
@@ -123,7 +126,7 @@ def test_write_namespace_state_files_preserves_better_existing_metadata(tmp_path
     write_namespace_state_files(
         output_dir=output_dir,
         cluster="cluster-a",
-        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=UTC),
         namespace_rows=[
             InventoryRow(
                 cluster="cluster-a",
@@ -141,6 +144,112 @@ def test_write_namespace_state_files_preserves_better_existing_metadata(tmp_path
     assert '"last_seen_at": "2026-05-20T09:30:00+00:00"' in payload
     assert '"repository": "https://git.example/api"' in payload
     assert '"owner_team": "Ops"' in payload
+
+
+def test_write_namespace_state_files_preserves_current_labels_when_existing_metadata_wins(tmp_path):
+    output_dir = tmp_path / "Inventory"
+    state_file = namespace_state_path(output_dir, "cluster-a", "api-prod")
+    state_file.parent.mkdir(parents=True)
+    state_file.write_text(
+        """
+{
+  "schema_version": 1,
+  "cluster": "cluster-a",
+  "namespace_name": "api-prod",
+  "last_seen_at": "2026-05-19T09:30:00+00:00",
+  "namespace": {
+    "cluster": "old-cluster",
+    "namespace": "old-namespace",
+    "stage": "prod",
+    "product": "demo",
+    "product_title": "Demo",
+    "repository": "https://git.example/api",
+    "owner_team": "Ops"
+  },
+  "buckets": []
+}
+""",
+        encoding="utf-8",
+    )
+
+    write_namespace_state_files(
+        output_dir=output_dir,
+        cluster="cluster-a",
+        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=UTC),
+        namespace_rows=[
+            InventoryRow(
+                cluster="cluster-a",
+                product="",
+                namespace="api-prod",
+                repository="",
+                owner_team="",
+                labels={"app": "api"},
+                stage="prod",
+            )
+        ],
+        bucket_rows=[],
+    )
+
+    payload = json.loads(state_file.read_text(encoding="utf-8"))
+    assert payload["namespace"]["cluster"] == "cluster-a"
+    assert payload["namespace"]["namespace"] == "api-prod"
+    assert payload["namespace"]["repository"] == "https://git.example/api"
+    assert payload["namespace"]["labels"] == {"app": "api"}
+
+
+def test_write_namespace_state_files_preserves_existing_labels_when_current_metadata_wins(tmp_path):
+    output_dir = tmp_path / "Inventory"
+    state_file = namespace_state_path(output_dir, "cluster-a", "api-prod")
+    state_file.parent.mkdir(parents=True)
+    state_file.write_text(
+        """
+{
+  "schema_version": 1,
+  "cluster": "cluster-a",
+  "namespace_name": "api-prod",
+  "last_seen_at": "2026-05-19T09:30:00+00:00",
+  "namespace": {
+    "cluster": "cluster-a",
+    "namespace": "api-prod",
+    "stage": "prod",
+    "labels": {"app": "api"},
+    "product": "demo"
+  },
+  "buckets": []
+}
+""",
+        encoding="utf-8",
+    )
+
+    write_namespace_state_files(
+        output_dir=output_dir,
+        cluster="cluster-a",
+        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=UTC),
+        namespace_rows=[
+            InventoryRow(
+                cluster="cluster-a",
+                product="demo",
+                product_title="Demo",
+                namespace="api-prod",
+                repository="https://git.example/api",
+                owner_team="Ops",
+                stage="prod",
+            )
+        ],
+        bucket_rows=[],
+    )
+
+    payload = json.loads(state_file.read_text(encoding="utf-8"))
+    assert payload["namespace"]["repository"] == "https://git.example/api"
+    assert payload["namespace"]["labels"] == {"app": "api"}
+
+
+def test_load_namespace_state_rejects_malformed_schema_version(tmp_path):
+    state_file = tmp_path / "state.json"
+    state_file.write_text('{"schema_version": "bad"}', encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="Unsupported cluster namespace state schema version"):
+        load_namespace_state(state_file)
 
 
 def test_write_namespace_state_files_tracks_bucket_last_seen_independently(tmp_path):
@@ -177,7 +286,7 @@ def test_write_namespace_state_files_tracks_bucket_last_seen_independently(tmp_p
     write_namespace_state_files(
         output_dir=output_dir,
         cluster="cluster-a",
-        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 20, 9, 30, tzinfo=UTC),
         namespace_rows=[
             InventoryRow(
                 cluster="cluster-a",

@@ -42,8 +42,8 @@ def namespace_recommendations(
     required_resource_missing = resource_missing_buckets(resource_policy.get("required", []))
     optional_resource_missing = resource_missing_buckets(resource_policy.get("optional", []))
     product_resources = clean_metadata_resources(config.get("resources"))
-    for namespace, entry in raw_namespaces.items():
-        entry = entry if isinstance(entry, dict) else {}
+    for namespace, raw_entry in raw_namespaces.items():
+        entry = raw_entry if isinstance(raw_entry, dict) else {}
         collect_project_missing(namespace, entry, project_missing)
         resources = effective_namespace_resources(product_resources, entry)
         collect_resource_missing(namespace, resources, required_resource_missing)
@@ -85,9 +85,9 @@ def collect_resource_missing(
     resources: dict[str, str],
     missing_by_field: dict[str, list[str]],
 ) -> None:
-    for field in missing_by_field:
+    for field, paths in missing_by_field.items():
         if not has_config_value(resources, field):
-            missing_by_field[field].append(f"namespaces.{namespace}.resources.{field}")
+            paths.append(f"namespaces.{namespace}.resources.{field}")
 
 
 def project_field_recommendations(

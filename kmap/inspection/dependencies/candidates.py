@@ -1,7 +1,7 @@
 """Dependency candidate parsing and deduplication."""
 
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from ...database import database_metadata_for_candidate
 from .dedup import (
@@ -18,19 +18,21 @@ from .model import (
 )
 from .parsing import dependency_candidate_key, dependency_value_parts, parse_dependency_hostish
 
-SUSPECT_KEY_RE = re.compile(r"(HOST|ADDR|ADDRESS|ENDPOINT|URL|URI|DSN|BROKER|BOOTSTRAP|SERVER|AMQP|GRPC)", re.I)
+SUSPECT_KEY_RE = re.compile(
+    r"(HOST|ADDR|ADDRESS|ENDPOINT|URL|URI|DSN|BROKER|BOOTSTRAP|SERVER|AMQP|GRPC)", re.IGNORECASE
+)
 IGNORE_KEY_RE = re.compile(
     r"(^HOSTNAME$|^SERVER_NAME$|SERVER_MODE|API_KEY|PASSWORD|PASSWD|PASS\b|TOKEN\b|SECRET\b|PRIVATE_KEY\b|ACCESS_KEY\b|"
     r"[A-Z0-9]+_[0-9]{2,5}|.*_(TEST|RELEASE|QA|DEV)_.*)",
-    re.I,
+    re.IGNORECASE,
 )
 
 
-def dependency_candidates_from_map(data: Dict[str, str], source: str, source_name: str) -> List[Dict[str, Any]]:
-    out: List[Dict[str, Any]] = []
-    for key, value in (data or {}).items():
-        key = str(key)
-        value = "" if value is None else str(value).strip()
+def dependency_candidates_from_map(data: dict[str, str], source: str, source_name: str) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for raw_key, raw_value in (data or {}).items():
+        key = str(raw_key)
+        value = "" if raw_value is None else str(raw_value).strip()
         if not should_consider_dependency_pair(key, value):
             continue
         out.extend(dependency_candidates_from_pair(data, key, value, source, source_name))
@@ -46,12 +48,12 @@ def should_consider_dependency_pair(key: str, value: str) -> bool:
 
 
 def dependency_candidates_from_pair(
-    data: Dict[str, str],
+    data: dict[str, str],
     key: str,
     value: str,
     source: str,
     source_name: str,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     candidates = []
     candidate_input = DependencyCandidateInput(
         data=data,
@@ -68,12 +70,12 @@ def dependency_candidates_from_pair(
 
 
 def dependency_candidate_from_raw_part(
-    data: Dict[str, str],
+    data: dict[str, str],
     key: str,
     value: str,
     raw_part: str,
     *source_parts: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     source, source_name = source_parts
     return dependency_candidate_from_input(
         DependencyCandidateInput(
@@ -87,7 +89,7 @@ def dependency_candidate_from_raw_part(
     )
 
 
-def dependency_candidate_from_input(candidate_input: DependencyCandidateInput, raw_part: str) -> Dict[str, Any]:
+def dependency_candidate_from_input(candidate_input: DependencyCandidateInput, raw_part: str) -> dict[str, Any]:
     parsed = parse_dependency_hostish(raw_part)
     if not parsed:
         return {}
@@ -97,8 +99,8 @@ def dependency_candidate_from_input(candidate_input: DependencyCandidateInput, r
 def dependency_candidate(
     candidate_input: DependencyCandidateInput,
     raw_part: str,
-    parsed: Tuple[str, int | None, str],
-) -> Dict[str, Any]:
+    parsed: tuple[str, int | None, str],
+) -> dict[str, Any]:
     host, port, path = parsed
     item = base_dependency_candidate(
         BaseDependencyCandidateInput(
@@ -115,7 +117,7 @@ def dependency_candidate(
     return item
 
 
-def base_dependency_candidate(candidate_input: BaseDependencyCandidateInput) -> Dict[str, Any]:
+def base_dependency_candidate(candidate_input: BaseDependencyCandidateInput) -> dict[str, Any]:
     return {
         "source": candidate_input.source,
         "source_name": candidate_input.source_name,
@@ -130,8 +132,8 @@ def base_dependency_candidate(candidate_input: BaseDependencyCandidateInput) -> 
 
 
 def attach_dependency_database_metadata(
-    item: Dict[str, Any],
-    data: Dict[str, str],
+    item: dict[str, Any],
+    data: dict[str, str],
     key: str,
     raw_part: str,
     host: str,

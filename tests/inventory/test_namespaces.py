@@ -1,5 +1,5 @@
 from argparse import Namespace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -14,6 +14,7 @@ from kmap.inventory.namespaces import (
     render_inventory,
     render_inventory_html,
 )
+from kmap.inventory.product_config import load_valid_product_config
 
 
 def test_render_inventory_full_delegates_to_live_discovery(monkeypatch, tmp_path):
@@ -212,6 +213,18 @@ def test_collect_inventory_rows_fails_for_missing_or_invalid_config_dir(tmp_path
         collect_inventory_rows(bad_dir)
 
 
+def test_load_valid_product_config_loads_yaml_and_reports_shape_errors(tmp_path):
+    config_file = tmp_path / "demo.yaml"
+    config_file.write_text("product: demo\ntitle: Demo\nenv: prod\nnamespaces:\n  api-prod: {}\n", encoding="utf-8")
+
+    assert load_valid_product_config(config_file)["product"] == "demo"
+
+    bad_config = tmp_path / "bad.yaml"
+    bad_config.write_text("product: demo\nnamespaces: bad\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="Invalid product config"):
+        load_valid_product_config(bad_config)
+
+
 def test_render_inventory_html_escapes_values_and_links_repositories():
     rendered = render_inventory_html(
         [
@@ -333,7 +346,7 @@ def test_render_inventory_html_highlights_reused_repositories():
 def test_render_inventory_html_includes_generated_date_when_provided():
     rendered = render_inventory_html(
         [],
-        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=UTC),
     )
 
     assert "<title>Product Namespaces</title>" in rendered

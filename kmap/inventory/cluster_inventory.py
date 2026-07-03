@@ -17,6 +17,7 @@ from .cluster_inventory_rows import (
 )
 from .cluster_state import load_namespace_state
 from .row_payloads import BucketRowPayload, NamespaceRowPayload, RepositoryRowPayload, SerializedRow
+from .schema import require_schema_version
 
 
 @dataclass(frozen=True)
@@ -132,8 +133,12 @@ def unique_sorted(values: list[str]) -> list[str]:
 
 def load_cluster_fragment(fragment_file: Path) -> SerializedRow:
     payload = load_required_json_file(fragment_file)
-    if int(payload.get("schema_version") or 0) != CLUSTER_INVENTORY_SCHEMA_VERSION:
-        raise SystemExit(f"Unsupported cluster inventory schema version in {fragment_file}")
+    require_schema_version(
+        payload,
+        expected=CLUSTER_INVENTORY_SCHEMA_VERSION,
+        source=fragment_file,
+        kind="cluster inventory",
+    )
     return payload
 
 

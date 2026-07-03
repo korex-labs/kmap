@@ -7,6 +7,8 @@ from .row_payloads import (
     NamespaceRowPayload,
     RepositoryRowPayload,
     SerializedRow,
+    bucket_key,
+    bucket_sort_key,
     namespace_row_with_labels,
     normalize_string_dict,
     row_quality,
@@ -22,12 +24,7 @@ def sorted_bucket_rows(
 ) -> list[BucketRowPayload]:
     return sorted(
         bucket_rows.values(),
-        key=lambda row: (
-            row.get("bucket", ""),
-            row.get("endpoint", ""),
-            row.get("namespace", ""),
-            row.get("repository", ""),
-        ),
+        key=bucket_sort_key,
     )
 
 
@@ -47,7 +44,7 @@ def merge_namespace_rows(target: dict[str, NamespaceRowPayload], rows: list[Seri
         if existing is None or row_quality(normalized) > row_quality(existing):
             target[namespace] = namespace_row_with_labels(normalized, existing)
         elif normalized.get("labels") and not existing.get("labels"):
-            existing["labels"] = normalized["labels"]
+            target[namespace] = {**existing, "labels": normalized["labels"]}
 
 
 def merge_bucket_rows(
@@ -57,16 +54,6 @@ def merge_bucket_rows(
     for row in rows:
         normalized = normalize_string_dict(row)
         target.setdefault(bucket_key(normalized), normalized)
-
-
-def bucket_key(row: SerializedRow) -> tuple[str, str, str, str, str]:
-    return (
-        row.get("namespace", "").lower(),
-        row.get("repository", "").lower(),
-        row.get("bucket", "").lower(),
-        row.get("endpoint", "").lower(),
-        row.get("source_var", "").lower(),
-    )
 
 
 def repositories_for_cluster_namespaces(namespaces: list[NamespaceRowPayload]) -> list[RepositoryRowPayload]:
@@ -95,12 +82,9 @@ def repositories_for_cluster_namespaces(namespaces: list[NamespaceRowPayload]) -
 
 
 __all__ = [
-    "bucket_key",
     "merge_bucket_rows",
     "merge_namespace_rows",
-    "normalize_string_dict",
     "repositories_for_cluster_namespaces",
-    "row_quality",
     "rows_with_last_seen",
     "sorted_bucket_rows",
     "sorted_namespace_rows",

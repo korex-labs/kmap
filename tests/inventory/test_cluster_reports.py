@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from kmap.inventory.cluster_inventory import load_cluster_inventory
 from kmap.inventory.cluster_reports import (
@@ -37,7 +37,7 @@ def test_render_cluster_reports_writes_aggregate_json_and_html(tmp_path):
 
     written = render_cluster_reports(
         output_dir=tmp_path / "Inventory",
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
     )
 
     assert [path.name for path in written] == ["inventory.json", "namespaces.html", "buckets.html", "clusters.html"]
@@ -106,7 +106,7 @@ def test_render_cluster_reports_can_filter_cluster(tmp_path):
 
     written = render_cluster_reports(
         output_dir=tmp_path / "Inventory",
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
         cluster="cluster-b",
     )
 
@@ -127,7 +127,7 @@ def test_render_cluster_reports_removes_stale_repositories_page(tmp_path):
 
     render_cluster_reports(
         output_dir=tmp_path / "Inventory",
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
     )
 
     assert not (cluster_dir / "repositories.html").exists()
@@ -158,7 +158,7 @@ def test_write_cluster_report_files_returns_written_cluster_outputs(tmp_path):
 
     written = write_cluster_report_files(
         cluster_dir,
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
         tool_config={},
     )
 
@@ -190,7 +190,7 @@ def test_cluster_html_renderers_include_cluster_title_and_back_navigation(tmp_pa
         encoding="utf-8",
     )
     inventory = load_cluster_inventory(cluster_dir)
-    generated_at = datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc)
+    generated_at = datetime(2026, 5, 19, 9, 30, tzinfo=UTC)
 
     namespaces_html = render_cluster_namespaces_html(inventory, generated_at)
     buckets_html = render_cluster_buckets_html(inventory, generated_at)
@@ -234,7 +234,7 @@ def test_render_cluster_pages_mark_carried_state(tmp_path):
         encoding="utf-8",
     )
     inventory = load_cluster_inventory(cluster_dir)
-    generated_at = datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc)
+    generated_at = datetime(2026, 5, 20, 9, 30, tzinfo=UTC)
 
     namespaces_html = render_cluster_namespaces_html(inventory, generated_at)
     buckets_html = render_cluster_buckets_html(inventory, generated_at)
@@ -273,7 +273,7 @@ def test_render_clusters_index_html_links_cluster_reports(tmp_path):
     )
     inventory = load_cluster_inventory(cluster_dir)
 
-    rendered = render_clusters_index_html([inventory], datetime(2026, 5, 20, 9, 45, tzinfo=timezone.utc))
+    rendered = render_clusters_index_html([inventory], datetime(2026, 5, 20, 9, 45, tzinfo=UTC))
 
     assert "<title>Cluster Inventory</title>" in rendered
     assert "Generated: 2026-05-20 09:45:00 UTC" in rendered

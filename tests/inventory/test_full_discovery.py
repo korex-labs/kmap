@@ -1,5 +1,5 @@
 from argparse import Namespace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -354,7 +354,7 @@ namespaces:
 
     monkeypatch.setattr(full_discovery, "KubectlClient", DiscoveryClient)
 
-    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
 
     state_file = tmp_path / "Inventory" / "clusters" / "cluster-a" / "state" / "namespaces" / "api-prod.json"
     report = tmp_path / "reports" / "cluster-a" / "api-prod.report.json"
@@ -407,7 +407,7 @@ def test_discover_full_inventory_flushes_namespace_state_before_later_namespace_
     monkeypatch.setattr(full_discovery, "KubectlClient", PartialDiscoveryClient)
 
     with pytest.raises(RuntimeError, match="boom"):
-        discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc))
+        discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=UTC))
 
     state_file = tmp_path / "Inventory" / "clusters" / "cluster-a" / "state" / "namespaces" / "api-prod.json"
     assert state_file.exists()
@@ -462,7 +462,7 @@ def test_discover_full_inventory_does_not_persist_raw_secret_values(monkeypatch,
 
     monkeypatch.setattr(full_discovery, "KubectlClient", SecretDiscoveryClient)
 
-    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
 
     state_payload = (
         tmp_path / "Inventory" / "clusters" / "cluster-a" / "state" / "namespaces" / "api-prod.json"
@@ -498,7 +498,7 @@ def test_discover_full_inventory_uses_inventory_exec_defaults_for_live_client(mo
 
     monkeypatch.setattr(full_discovery, "KubectlClient", InspectClient)
 
-    assert discover_full_inventory(args, generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(args, generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
 
     assert client_kwargs[-1]["exec_timeout"] == 4
     assert client_kwargs[-1]["exec_attempts"] == 1
@@ -575,7 +575,7 @@ namespaces:
 
     monkeypatch.setattr(full_discovery, "KubectlClient", FamilyDiscoveryClient)
 
-    assert discover_full_inventory(args, generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(args, generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
 
     review_state = (
         tmp_path / "Inventory" / "clusters" / "cluster-a" / "state" / "namespaces" / "payment-api-review-1234.json"
@@ -606,7 +606,7 @@ def test_discover_full_inventory_logs_html_outputs_without_state_file_paths(monk
 
     monkeypatch.setattr(full_discovery, "KubectlClient", EmptyDiscoveryClient)
 
-    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
 
     err = capsys.readouterr().err
     assert "wrote cluster namespace state: 1 namespaces" in err
@@ -646,7 +646,7 @@ def test_inspect_and_persist_namespace_writes_report_state_and_timing_summary(mo
         cluster="cluster-a",
         reports_dir=tmp_path / "reports",
         inventory_row=None,
-        generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, tzinfo=UTC),
         progress=object(),
     )
 
@@ -684,7 +684,7 @@ def test_persist_inspected_namespace_accepts_context_object(monkeypatch, tmp_pat
             cluster="cluster-a",
             reports_dir=tmp_path / "reports",
             inventory_row=None,
-            generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 19, tzinfo=UTC),
             progress=object(),
         )
     ) == [tmp_path / "state.json"]
@@ -705,7 +705,7 @@ def test_discover_full_inventory_removes_legacy_live_discovery_fragment(monkeypa
 
     monkeypatch.setattr(full_discovery, "KubectlClient", EmptyDiscoveryClient)
 
-    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc)) == 0
+    assert discover_full_inventory(full_args(tmp_path), generated_at=datetime(2026, 5, 19, tzinfo=UTC)) == 0
     assert not legacy_file.exists()
 
 
@@ -731,7 +731,7 @@ def test_inspect_discovered_namespaces_removes_stale_reports(monkeypatch, tmp_pa
                 owner_team="",
             )
         ],
-        generated_at=datetime(2026, 5, 19, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, tzinfo=UTC),
     )
 
     assert not stale_report.exists()

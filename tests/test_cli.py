@@ -7,12 +7,17 @@ from kmap import cli
 KEYBOARD_INTERRUPT_EXIT_CODE = 130
 
 
-def test_main_handles_keyboard_interrupt_without_traceback(monkeypatch, capsys):
-    class Parser:
-        def parse_args(self, argv):
-            return Namespace(func=lambda args: (_ for _ in ()).throw(KeyboardInterrupt))
+def parser_factory():
+    return Parser()
 
-    monkeypatch.setattr(cli, "build_parser", lambda: Parser())
+
+class Parser:
+    def parse_args(self, argv):
+        return Namespace(func=lambda args: (_ for _ in ()).throw(KeyboardInterrupt))
+
+
+def test_main_handles_keyboard_interrupt_without_traceback(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "build_parser", parser_factory)
     monkeypatch.setattr(cli, "apply_tool_config_overrides", lambda args: args)
     monkeypatch.setattr(cli, "apply_config_overrides", lambda args: args)
 

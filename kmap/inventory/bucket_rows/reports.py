@@ -117,7 +117,7 @@ def dedupe_bucket_rows(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]
             str(candidate.get("var") or ""),
         )
         deduped.setdefault(key, candidate)
-    return sorted(deduped.values(), key=lambda item: key_for_bucket_candidate(item))
+    return sorted(deduped.values(), key=key_for_bucket_candidate)
 
 
 __all__ = [

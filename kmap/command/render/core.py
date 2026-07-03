@@ -3,7 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from ...config import slug_name
 from ...io import load_required_json_file
@@ -69,7 +69,7 @@ def render_likec4_output(args: argparse.Namespace) -> int:
     )
 
 
-def _package_attr(name: str, default: Callable):
+def _package_attr(name: str, default: Callable[..., Any]) -> Any:
     package = sys.modules.get("kmap.command.render")
     return getattr(package, name, default)
 

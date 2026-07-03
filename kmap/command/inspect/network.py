@@ -1,6 +1,6 @@
 """Network context extraction for namespace inspection."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ...config import clean_metadata_string
 from ...kubernetes import (
@@ -14,12 +14,12 @@ from ...kubernetes import (
 
 
 def workload_traffic_routes(
-    workload: Dict[str, Any],
-    matched_services: List[str],
-    matched_ingresses: List[str],
-    services: List[Dict[str, Any]],
-    ingresses: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    workload: dict[str, Any],
+    matched_services: list[str],
+    matched_ingresses: list[str],
+    services: list[dict[str, Any]],
+    ingresses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     workload_name = obj_name(workload)
     containers = workload_container_names(workload)
     routes = []
@@ -33,7 +33,7 @@ def workload_traffic_routes(
     return routes
 
 
-def workload_container_names(workload: Dict[str, Any]) -> List[str]:
+def workload_container_names(workload: dict[str, Any]) -> list[str]:
     pod_spec = ((workload.get("spec") or {}).get("template") or {}).get("spec") or {}
     return [
         clean_metadata_string(container.get("name"))
@@ -43,10 +43,10 @@ def workload_container_names(workload: Dict[str, Any]) -> List[str]:
 
 
 def service_traffic_routes(
-    service: Dict[str, Any],
+    service: dict[str, Any],
     workload_name: str,
-    containers: List[str],
-) -> List[Dict[str, Any]]:
+    containers: list[str],
+) -> list[dict[str, Any]]:
     service_name = obj_name(service)
     return [
         service_traffic_route(service_name, entrypoint, workload_name, containers)
@@ -57,10 +57,10 @@ def service_traffic_routes(
 
 def service_traffic_route(
     service_name: str,
-    entrypoint: Dict[str, Any],
+    entrypoint: dict[str, Any],
     workload_name: str,
-    containers: List[str],
-) -> Dict[str, Any]:
+    containers: list[str],
+) -> dict[str, Any]:
     return {
         "direction": "inbound",
         "source": {"type": "ServiceClient", "name": service_name},
@@ -82,11 +82,11 @@ def service_traffic_route(
 
 
 def ingress_traffic_routes(
-    ingress: Dict[str, Any],
-    matched_services: List[str],
+    ingress: dict[str, Any],
+    matched_services: list[str],
     workload_name: str,
-    containers: List[str],
-) -> List[Dict[str, Any]]:
+    containers: list[str],
+) -> list[dict[str, Any]]:
     ingress_name = obj_name(ingress)
     return [
         ingress_traffic_route(ingress_name, route, workload_name, containers)
@@ -97,10 +97,10 @@ def ingress_traffic_routes(
 
 def ingress_traffic_route(
     ingress_name: str,
-    route: Dict[str, Any],
+    route: dict[str, Any],
     workload_name: str,
-    containers: List[str],
-) -> Dict[str, Any]:
+    containers: list[str],
+) -> dict[str, Any]:
     host = route.get("host") or "*"
     path = route.get("path") or "/"
     return {
@@ -128,11 +128,11 @@ def ingress_traffic_route(
 
 
 def workload_network_context(
-    workload: Dict[str, Any],
+    workload: dict[str, Any],
     namespace: str,
-    services: List[Dict[str, Any]],
-    ingresses: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    services: list[dict[str, Any]],
+    ingresses: list[dict[str, Any]],
+) -> dict[str, Any]:
     matched_services = matched_service_names(workload, services)
     matched_ingresses = matched_ingress_names(matched_services, ingresses)
     entrypoints = workload_entrypoints(namespace, services, ingresses, matched_services, matched_ingresses)
@@ -151,29 +151,29 @@ def workload_network_context(
     }
 
 
-def matched_service_names(workload: Dict[str, Any], services: List[Dict[str, Any]]) -> List[str]:
+def matched_service_names(workload: dict[str, Any], services: list[dict[str, Any]]) -> list[str]:
     return [obj_name(service) for service in services if service_matches_workload(service, workload)]
 
 
-def matched_ingress_names(matched_services: List[str], ingresses: List[Dict[str, Any]]) -> List[str]:
+def matched_ingress_names(matched_services: list[str], ingresses: list[dict[str, Any]]) -> list[str]:
+    service_names = set(matched_services)
     return [
-        obj_name(ingress)
-        for ingress in ingresses
-        if any(name in matched_services for name in ingress_services(ingress))
+        obj_name(ingress) for ingress in ingresses if any(name in service_names for name in ingress_services(ingress))
     ]
 
 
-def named_objects(objects: List[Dict[str, Any]], names: List[str]) -> List[Dict[str, Any]]:
-    return [obj for obj in objects if obj_name(obj) in names]
+def named_objects(objects: list[dict[str, Any]], names: list[str]) -> list[dict[str, Any]]:
+    name_set = set(names)
+    return [obj for obj in objects if obj_name(obj) in name_set]
 
 
 def workload_entrypoints(
     namespace: str,
-    services: List[Dict[str, Any]],
-    ingresses: List[Dict[str, Any]],
-    matched_services: List[str],
-    matched_ingresses: List[str],
-) -> List[Dict[str, Any]]:
+    services: list[dict[str, Any]],
+    ingresses: list[dict[str, Any]],
+    matched_services: list[str],
+    matched_ingresses: list[str],
+) -> list[dict[str, Any]]:
     entrypoints = []
     for service in named_objects(services, matched_services):
         entrypoints.extend(service_entrypoints(service, namespace))

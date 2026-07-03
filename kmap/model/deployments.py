@@ -7,10 +7,10 @@ def deployment_entries_from_envs(deployments_by_env: Dict[str, Dict[str, Any]]) 
     deployments = []
     for dep in deployments_by_env.values():
         clusters = []
-        for cluster in dep["clusters"].values():
-            namespaces = list(cluster["namespaces"].values())
+        for raw_cluster in dep["clusters"].values():
+            namespaces = list(raw_cluster["namespaces"].values())
             namespaces.sort(key=lambda item: item.get("name", ""))
-            cluster = dict(cluster)
+            cluster = dict(raw_cluster)
             cluster["namespaces"] = namespaces
             clusters.append(cluster)
         clusters.sort(key=lambda item: item.get("name", ""))

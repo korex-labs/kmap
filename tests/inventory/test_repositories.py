@@ -129,6 +129,8 @@ def test_enrich_inventory_rows_uses_cache_without_requiring_token(monkeypatch, t
                 repository="https://git.example/team/backend/payments-api",
                 owner_team="Payments",
                 repository_id="123",
+                labels={"app": "payments"},
+                last_seen_at="2026-05-20T09:30:00+00:00",
             )
         ],
         {
@@ -148,6 +150,8 @@ def test_enrich_inventory_rows_uses_cache_without_requiring_token(monkeypatch, t
     assert rows[0].repository_path == "team/backend/payments-api"
     assert rows[0].repository_group == "team/backend"
     assert rows[0].repository_archived == "false"
+    assert rows[0].labels == {"app": "payments"}
+    assert rows[0].last_seen_at == "2026-05-20T09:30:00+00:00"
 
 
 def test_enrich_inventory_rows_is_noop_without_repository_catalog_config():
@@ -195,6 +199,7 @@ def test_enrich_inventory_rows_can_attach_repository_id_from_configured_namespac
                 namespace="payments-api-prod-1234",
                 repository="repository:1234",
                 owner_team="Payments",
+                labels={"app": "payments"},
             )
         ],
         {
@@ -212,6 +217,15 @@ def test_enrich_inventory_rows_can_attach_repository_id_from_configured_namespac
 
     assert rows[0].repository_id == "1234"
     assert rows[0].repository == "https://git.example/team/backend/payments-api"
+    assert rows[0].labels == {"app": "payments"}
+
+
+def test_load_repository_cache_rejects_malformed_schema_version(tmp_path):
+    cache_file = tmp_path / "repositories.json"
+    cache_file.write_text('{"schema_version": "bad", "repositories": []}', encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="Unsupported repository cache schema version"):
+        load_repository_cache(cache_file)
 
 
 def test_gitlab_project_url_encodes_repository_id():

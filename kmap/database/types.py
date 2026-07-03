@@ -4,8 +4,8 @@ import re
 
 from ..config import clean_metadata_string
 
-MYSQL_RE = re.compile(r"(mysql|mariadb)", re.I)
-POSTGRES_RE = re.compile(r"(postgres|postgresql|pgsql|pgdatabase)", re.I)
+MYSQL_RE = re.compile(r"(mysql|mariadb)", re.IGNORECASE)
+POSTGRES_RE = re.compile(r"(postgres|postgresql|pgsql|pgdatabase)", re.IGNORECASE)
 
 
 def database_engine_from_text(*values: str) -> str:

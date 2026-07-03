@@ -1,6 +1,10 @@
 import json
 
-from kmap.command.validate_structurizr import _validate_include_targets, validate_structurizr
+from kmap.command.validate_structurizr import (
+    _validate_generated_manifest,
+    _validate_include_targets,
+    validate_structurizr,
+)
 
 
 def _args(root, *products):
@@ -97,6 +101,23 @@ def test_validate_structurizr_reports_invalid_manifest_json(tmp_path):
     assert validate_structurizr(_args(root, "demo")) == 1
 
 
+def test_validate_generated_manifest_reports_invalid_shapes(tmp_path):
+    product = tmp_path / "Structurizr" / "demo"
+    (product / "model").mkdir(parents=True)
+    manifest = product / "model" / ".kmap-generated.json"
+
+    manifest.write_text("[]", encoding="utf-8")
+    assert _validate_generated_manifest(product) == [f"invalid generated manifest: {manifest}: expected object"]
+
+    manifest.write_text(json.dumps({"files": "model/generated.dsl"}), encoding="utf-8")
+    assert _validate_generated_manifest(product) == [f"invalid generated manifest: {manifest}: files must be a list"]
+
+    manifest.write_text(json.dumps({"files": [123]}), encoding="utf-8")
+    assert _validate_generated_manifest(product) == [
+        f"invalid generated manifest: {manifest}: files entries must be strings"
+    ]
+
+
 def test_validate_structurizr_reports_workspace_contract_errors(tmp_path):
     root = tmp_path / "Structurizr"
     product = root / "demo"
@@ -141,6 +162,19 @@ def test_validate_include_targets_reports_missing_and_empty_includes(tmp_path):
         f"missing include target: {product / 'model' / 'missing.dsl'}",
         f"included directory has no .dsl files: {empty_dir}",
     ]
+
+
+def test_validate_include_targets_reports_read_errors(monkeypatch, tmp_path):
+    workspace_file = tmp_path / "demo" / "workspace.dsl"
+    workspace_file.parent.mkdir(parents=True)
+    workspace_file.write_text("workspace {}\n", encoding="utf-8")
+
+    def fail_read_text(self, *args, **kwargs):
+        raise OSError("cannot read")
+
+    monkeypatch.setattr(type(workspace_file), "read_text", fail_read_text)
+
+    assert _validate_include_targets(workspace_file) == [f"cannot read workspace.dsl: {workspace_file}: cannot read"]
 
 
 def test_validate_structurizr_discovers_generated_workspaces_and_ignores_empty_root(tmp_path):

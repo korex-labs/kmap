@@ -61,7 +61,7 @@ def configured_storage_type_label(haystack: str, storage_type_rules: list[dict[s
         label = str(rule.get("label") or "")
         if not pattern or not label:
             continue
-        match = re.search(pattern, haystack, flags=re.I)
+        match = re.search(pattern, haystack, flags=re.IGNORECASE)
         if match:
             return format_storage_type_label(label, match)
     return ""
@@ -76,7 +76,7 @@ def format_storage_type_label(label: str, match: re.Match) -> str:
 
 
 def amazon_s3_region(endpoint: str) -> str:
-    match = re.search(r"(?:^|[.])s3[.-](?P<region>[a-z0-9-]+)[.]amazonaws[.]com$", endpoint or "", flags=re.I)
+    match = re.search(r"(?:^|[.])s3[.-](?P<region>[a-z0-9-]+)[.]amazonaws[.]com$", endpoint or "", flags=re.IGNORECASE)
     return match.group("region") if match else ""
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -56,7 +56,7 @@ namespaces:
         config_dir=config_dir,
         bucket_artifacts_dir=bucket_artifacts_dir,
         output_dir=output_dir,
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
     )
 
     assert sorted(path.name for path in written) == ["demo.json", "demo.json"]
@@ -100,7 +100,7 @@ namespaces:
         config_dir=config_dir,
         bucket_artifacts_dir=tmp_path / "missing-buckets",
         output_dir=output_dir,
-        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),
         cluster="cluster-b",
     )
 
@@ -121,6 +121,21 @@ def test_bucket_rows_for_config_fragment_rejects_unknown_schema(tmp_path):
     config_file = tmp_path / "demo.yaml"
     config_file.write_text("product: demo\n", encoding="utf-8")
     (bucket_artifacts_dir / "demo.json").write_text('{"schema_version": 999, "rows": []}', encoding="utf-8")
+
+    with pytest.raises(SystemExit, match=r"Unsupported bucket report schema version in demo[.]json"):
+        bucket_rows_for_config_fragment(
+            bucket_artifacts_dir=bucket_artifacts_dir,
+            config_file=config_file,
+            namespace_rows=[],
+        )
+
+
+def test_bucket_rows_for_config_fragment_rejects_malformed_schema(tmp_path):
+    bucket_artifacts_dir = tmp_path / "artifacts" / "buckets"
+    bucket_artifacts_dir.mkdir(parents=True)
+    config_file = tmp_path / "demo.yaml"
+    config_file.write_text("product: demo\n", encoding="utf-8")
+    (bucket_artifacts_dir / "demo.json").write_text('{"schema_version": "bad", "rows": []}', encoding="utf-8")
 
     with pytest.raises(SystemExit, match=r"Unsupported bucket report schema version in demo[.]json"):
         bucket_rows_for_config_fragment(

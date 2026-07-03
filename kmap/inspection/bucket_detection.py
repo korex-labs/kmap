@@ -5,15 +5,15 @@ from typing import Any, Dict, List
 
 from ..hostish import parse_hostish
 
-BUCKET_KEY_RE = re.compile(r"(^|_)(BUCKET|BUCKET_NAME|S3_BUCKET|CEPH_BUCKET|MINIO_BUCKET)($|_)", re.I)
-OBJECT_STORAGE_KEY_RE = re.compile(r"(S3|CEPH|MINIO|OBJECT_STORAGE|BUCKET|OS_AUTH_URL|OPENSTACK|SWIFT)", re.I)
-ENDPOINT_KEY_RE = re.compile(r"(ENDPOINT|HOST|URL|URI|BASE)", re.I)
+BUCKET_KEY_RE = re.compile(r"(^|_)(BUCKET|BUCKET_NAME|S3_BUCKET|CEPH_BUCKET|MINIO_BUCKET)($|_)", re.IGNORECASE)
+OBJECT_STORAGE_KEY_RE = re.compile(r"(S3|CEPH|MINIO|OBJECT_STORAGE|BUCKET|OS_AUTH_URL|OPENSTACK|SWIFT)", re.IGNORECASE)
+ENDPOINT_KEY_RE = re.compile(r"(ENDPOINT|HOST|URL|URI|BASE)", re.IGNORECASE)
 SENSITIVE_BUCKET_KEY_RE = re.compile(
     r"(ACCESS_KEY|SECRET_KEY|SECRET|PASSWORD|PASSWD|TOKEN|PRIVATE_KEY|CREDENTIAL|SESSION|COOKIE)",
-    re.I,
+    re.IGNORECASE,
 )
-VIRTUAL_HOSTED_S3_RE = re.compile(r"^(?P<bucket>[a-z0-9][a-z0-9.-]*)[.]s3[.-]", re.I)
-KUBERNETES_SERVICE_PORT_KEY_RE = re.compile(r"_PORT_\d+_(TCP|UDP)($|_)", re.I)
+VIRTUAL_HOSTED_S3_RE = re.compile(r"^(?P<bucket>[a-z0-9][a-z0-9.-]*)[.]s3[.-]", re.IGNORECASE)
+KUBERNETES_SERVICE_PORT_KEY_RE = re.compile(r"_PORT_\d+_(TCP|UDP)($|_)", re.IGNORECASE)
 REJECTED_BUCKET_VALUES = {
     "dev",
     "false",

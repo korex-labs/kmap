@@ -36,7 +36,7 @@ def repository_url_path_keys(url: str) -> list[str]:
 
 
 def strip_git_suffix(value: str) -> str:
-    return value[:-4] if value.endswith(".git") else value
+    return value.removesuffix(".git")
 
 
 def normalize_repository_key(value: str) -> str:

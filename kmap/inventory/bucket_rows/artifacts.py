@@ -4,6 +4,7 @@ from typing import Any
 
 from ...inspection import bucket_candidate_from_pair
 from ..namespaces import InventoryRow
+from ..schema import require_schema_version
 from .model import BucketUsageRow
 from .reports import bucket_inventory_row
 from .signals import is_bucket_usage_signal
@@ -17,11 +18,20 @@ def bucket_rows_from_artifact(
     *,
     fallback_report_key: str,
 ) -> list[BucketUsageRow]:
-    if int(payload.get("schema_version") or 0) != BUCKET_REPORT_SCHEMA_VERSION:
-        raise SystemExit(f"Unsupported bucket report schema version in {fallback_report_key}")
+    require_schema_version(
+        payload,
+        expected=BUCKET_REPORT_SCHEMA_VERSION,
+        source=fallback_report_key,
+        kind="bucket report",
+    )
     report_key = str(payload.get("report_key") or fallback_report_key)
+    artifact_rows = payload.get("rows") or []
+    if not isinstance(artifact_rows, list):
+        raise SystemExit(f"Invalid bucket report rows in {fallback_report_key}: expected list")
     rows = []
-    for item in payload.get("rows") or []:
+    for item in artifact_rows:
+        if not isinstance(item, dict):
+            raise SystemExit(f"Invalid bucket report row in {fallback_report_key}: expected object")
         enriched_item = enrich_bucket_artifact_item(item)
         cluster = str(item.get("cluster") or "")
         namespace = str(item.get("namespace") or "")

@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from .common import has_config_value
 from .models import ConfigRecommendation
 
 PRODUCT_RECOMMENDATIONS = (
@@ -48,8 +49,6 @@ PRODUCT_RECOMMENDATIONS = (
 
 
 def product_recommendations(config: dict[str, Any], *, include_low: bool = False) -> list[ConfigRecommendation]:
-    from .common import has_config_value
-
     recommendations = []
     for priority, field, reason, snippet in PRODUCT_RECOMMENDATIONS:
         if priority == "low" and not include_low:

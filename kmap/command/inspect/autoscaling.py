@@ -42,7 +42,7 @@ def _hpa_resource_metric_formula(resource: Dict[str, Any]) -> str:
 
 
 def _hpa_named_metric_formula(metric_config: Dict[str, Any], fallback_name: str) -> str:
-    metric_name = clean_metadata_string(((metric_config.get("metric") or {}).get("name"))) or fallback_name
+    metric_name = clean_metadata_string((metric_config.get("metric") or {}).get("name")) or fallback_name
     return _metric_target_formula(metric_name, metric_config.get("target") or {})
 
 

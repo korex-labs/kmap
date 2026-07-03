@@ -5,16 +5,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from ..config import slug_name, validate_config_shape
-from ..io import dump_json, ensure_dir, load_required_json_file, load_yaml_config_or_error
+from ..config import slug_name
+from ..io import dump_json, ensure_dir, load_required_json_file
 from ..logging import eprint
 from .buckets import (
     BUCKET_REPORT_SCHEMA_VERSION,
+    BucketUsageRow,
     bucket_row_dict,
     bucket_rows_from_artifact,
 )
 from .namespaces import InventoryRow, config_files, inventory_rows_for_config
-from .row_payloads import NamespaceRowPayload, RepositoryRowPayload, SerializedRow
+from .product_config import load_valid_product_config
+from .row_payloads import FragmentRepositoryRowPayload, NamespaceRowPayload, SerializedRow
+from .schema import require_schema_version
 
 CLUSTER_INVENTORY_SCHEMA_VERSION = 1
 
@@ -64,27 +67,22 @@ def write_cluster_fragment(output_dir: Path, cluster: str, fragment_id: str, fra
     return output_file
 
 
-def load_valid_product_config(config_file: Path) -> dict[str, Any]:
-    config = load_yaml_config_or_error(config_file)
-    errors, _warnings = validate_config_shape(config)
-    if errors:
-        joined = "\n".join(f"- {error}" for error in errors)
-        raise SystemExit(f"Invalid product config: {config_file}\n{joined}")
-    return config
-
-
 def bucket_rows_for_config_fragment(
     *,
     bucket_artifacts_dir: Path,
     config_file: Path,
     namespace_rows: list[InventoryRow],
-):
+) -> list[BucketUsageRow]:
     artifact_file = bucket_artifacts_dir / f"{config_file.stem}.json"
     if not artifact_file.exists():
         return []
     payload = load_required_json_file(artifact_file)
-    if int(payload.get("schema_version") or 0) != BUCKET_REPORT_SCHEMA_VERSION:
-        raise SystemExit(f"Unsupported bucket report schema version in {artifact_file.name}")
+    require_schema_version(
+        payload,
+        expected=BUCKET_REPORT_SCHEMA_VERSION,
+        source=artifact_file.name,
+        kind="bucket report",
+    )
     inventory = {(row.cluster, row.namespace): row for row in namespace_rows}
     inventory.update({("", row.namespace): row for row in namespace_rows})
     return bucket_rows_from_artifact(payload, inventory, fallback_report_key=config_file.stem)
@@ -135,7 +133,7 @@ def namespace_row_dict(row: InventoryRow) -> NamespaceRowPayload:
     return payload
 
 
-def repositories_for_namespaces(rows: list[InventoryRow]) -> list[RepositoryRowPayload]:
+def repositories_for_namespaces(rows: list[InventoryRow]) -> list[FragmentRepositoryRowPayload]:
     namespaces_by_repo: dict[str, list[str]] = defaultdict(list)
     metadata_by_repo: dict[str, InventoryRow] = {}
     for row in rows:

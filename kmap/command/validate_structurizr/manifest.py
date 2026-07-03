@@ -10,11 +10,19 @@ def _validate_generated_manifest(workspace_dir: Path) -> list[str]:
         return [f"missing generated manifest: {manifest_file}"]
     try:
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return [f"invalid generated manifest: {manifest_file}: {exc}"]
 
     errors = []
-    for file_name in manifest.get("files") or []:
+    if not isinstance(manifest, dict):
+        return [f"invalid generated manifest: {manifest_file}: expected object"]
+    files = manifest.get("files") or []
+    if not isinstance(files, list):
+        return [f"invalid generated manifest: {manifest_file}: files must be a list"]
+    for file_name in files:
+        if not isinstance(file_name, str):
+            errors.append(f"invalid generated manifest: {manifest_file}: files entries must be strings")
+            continue
         path = workspace_dir / file_name
         if not path.is_file():
             errors.append(f"manifest references missing file: {path}")

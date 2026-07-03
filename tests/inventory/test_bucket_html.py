@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from kmap.inventory.bucket_html import render_buckets_html
 from kmap.inventory.bucket_rows import BucketUsageRow
@@ -54,7 +54,7 @@ def test_render_buckets_html_contains_summary_filter_and_reuse_chip():
                 repository_archived="true",
             ),
         ],
-        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=timezone.utc),
+        generated_at=datetime(2026, 5, 18, 9, 30, 0, tzinfo=UTC),
     )
 
     assert "<title>Storage Buckets</title>" in rendered

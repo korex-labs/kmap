@@ -1,11 +1,12 @@
 """kubectl and helm subprocess client."""
 
-import os
 import shutil
 import subprocess
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from math import isfinite
+from pathlib import Path
+from typing import Any
 
 from ..io import safe_json_loads
 from ..logging import completed_process_message, eprint, progress_command_failed, run_cmd
@@ -19,9 +20,9 @@ EXEC_CAPTURE_RETRY_SLEEP_SECONDS = 1.0
 class KubectlClient:
     kubectl: str = "kubectl"
     helm: str = "helm"
-    context: Optional[str] = None
-    kubeconfig: Optional[str] = None
-    namespace: Optional[str] = None
+    context: str | None = None
+    kubeconfig: str | None = None
+    namespace: str | None = None
     request_timeout: str = "15s"
     qps_sleep: float = 0.15
     exec_sleep: float = 0.4
@@ -32,9 +33,9 @@ class KubectlClient:
         if not self.kubeconfig:
             self.kubeconfig = default_kubeconfig_path()
         if self.kubeconfig:
-            self.kubeconfig = os.path.expanduser(self.kubeconfig)
+            self.kubeconfig = str(Path(self.kubeconfig).expanduser())
 
-    def base(self) -> List[str]:
+    def base(self) -> list[str]:
         cmd = [self.kubectl]
         if self.kubeconfig:
             cmd += ["--kubeconfig", self.kubeconfig]
@@ -74,7 +75,7 @@ class KubectlClient:
             return True, ""
         return False, completed_process_output(cp)
 
-    def get_json(self, kind: str, namespace: Optional[str] = None) -> Dict[str, Any]:
+    def get_json(self, kind: str, namespace: str | None = None) -> dict[str, Any]:
         ns = namespace if namespace is not None else self.namespace
         cmd = [*self.base(), f"--request-timeout={self.request_timeout}", "get", kind]
         if ns:
@@ -93,7 +94,7 @@ class KubectlClient:
         time.sleep(self.qps_sleep)
         return safe_json_loads(cp.stdout, {"items": []})
 
-    def helm_list(self, namespace: str) -> List[Dict[str, Any]]:
+    def helm_list(self, namespace: str) -> list[dict[str, Any]]:
         if not shutil.which(self.helm):
             return []
         cmd = [self.helm]
@@ -116,7 +117,7 @@ class KubectlClient:
         namespace: str,
         pod: str,
         container: str,
-        argv: List[str],
+        argv: list[str],
         *,
         report_failure: bool = True,
     ) -> str:
@@ -134,14 +135,14 @@ class KubectlClient:
             progress_command_failed(cmd)
         return ""
 
-    def exec_command(self, namespace: str, pod: str, container: str, argv: List[str]) -> List[str]:
+    def exec_command(self, namespace: str, pod: str, container: str, argv: list[str]) -> list[str]:
         return [*self.base(), "exec", pod, "-c", container, "-n", namespace, "--", *argv]
 
-    def exec_capture_once(self, cmd: List[str]) -> str:
+    def exec_capture_once(self, cmd: list[str]) -> str:
         output, _ = self.exec_capture_attempt(cmd)
         return output
 
-    def exec_capture_attempt(self, cmd: List[str]) -> tuple[str, bool]:
+    def exec_capture_attempt(self, cmd: list[str]) -> tuple[str, bool]:
         try:
             cp = run_cmd(cmd, check=False, timeout=self.exec_timeout, progress_failure=False, progress=False)
             time.sleep(self.exec_sleep)
@@ -167,14 +168,18 @@ def retryable_exec_failure(returncode: int, stderr: str) -> bool:
 
 def request_timeout_seconds(value: str) -> int:
     raw = str(value or "").strip().lower()
-    if raw.endswith("ms"):
-        return max(1, int(float(raw[:-2]) / 1000))
-    if raw.endswith("s"):
-        return max(1, int(float(raw[:-1])))
-    if raw.endswith("m"):
-        return max(1, int(float(raw[:-1]) * 60))
     try:
-        return max(1, int(float(raw)))
+        if raw.endswith("ms"):
+            seconds = float(raw[:-2]) / 1000
+        elif raw.endswith("s"):
+            seconds = float(raw[:-1])
+        elif raw.endswith("m"):
+            seconds = float(raw[:-1]) * 60
+        else:
+            seconds = float(raw)
+        if not isfinite(seconds):
+            return 15
+        return max(1, int(seconds))
     except ValueError:
         return 15
 

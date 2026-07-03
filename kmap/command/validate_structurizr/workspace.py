@@ -8,18 +8,23 @@ from .manifest import _validate_generated_manifest
 INCLUDE_RE = re.compile(r"^\s*!include\s+(.+?)\s*$")
 
 
-def _include_targets(workspace_file: Path) -> list[Path]:
+def _include_targets(workspace_file: Path, workspace_text: str | None = None) -> list[Path]:
     targets = []
-    for line in workspace_file.read_text(encoding="utf-8").splitlines():
+    text = workspace_text if workspace_text is not None else workspace_file.read_text(encoding="utf-8")
+    for line in text.splitlines():
         match = INCLUDE_RE.match(line)
         if match:
             targets.append(workspace_file.parent / match.group(1))
     return targets
 
 
-def _validate_include_targets(workspace_file: Path) -> list[str]:
+def _validate_include_targets(workspace_file: Path, workspace_text: str | None = None) -> list[str]:
     errors = []
-    for include_target in _include_targets(workspace_file):
+    try:
+        include_targets = _include_targets(workspace_file, workspace_text)
+    except (OSError, UnicodeDecodeError) as exc:
+        return [f"cannot read workspace.dsl: {workspace_file}: {exc}"]
+    for include_target in include_targets:
         if include_target.is_dir():
             if not any(include_target.glob("*.dsl")):
                 errors.append(f"included directory has no .dsl files: {include_target}")
@@ -36,7 +41,7 @@ def _validate_workspace(workspace_dir: Path) -> list[str]:
 
     try:
         workspace_text = workspace_file.read_text(encoding="utf-8")
-    except Exception as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         return [f"cannot read workspace.dsl: {workspace_file}: {exc}"]
 
     if "workspace extends ../common/workspace.dsl" not in workspace_text:
@@ -46,7 +51,7 @@ def _validate_workspace(workspace_dir: Path) -> list[str]:
     if not common_workspace.is_file():
         errors.append(f"missing common workspace: {common_workspace}")
 
-    errors.extend(_validate_include_targets(workspace_file))
+    errors.extend(_validate_include_targets(workspace_file, workspace_text))
     errors.extend(_validate_generated_manifest(workspace_dir))
     return errors
 

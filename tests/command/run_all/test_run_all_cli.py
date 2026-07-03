@@ -153,5 +153,14 @@ def test_run_all_cli_smoke_generates_mocked_outputs(monkeypatch, tmp_path):
     assert (structurizr_dir / "workspace.dsl").is_file()
     assert (likec4_dir / "likec4.config.json").is_file()
 
+    report = json.loads((reports_dir / "example-api-prod-1234.report.json").read_text(encoding="utf-8"))
+    assert report["workloads"] == []
     architecture = json.loads(architecture_file.read_text(encoding="utf-8"))
     assert architecture["product"]["name"] == "example-product"
+    bucket_payload = json.loads((buckets_dir / "product.json").read_text(encoding="utf-8"))
+    assert bucket_payload["report_key"] == "product"
+    assert bucket_payload["product"] == "example-product"
+    assert bucket_payload["rows"] == []
+    namespaces_html = (inventory_dir / "namespaces.html").read_text(encoding="utf-8")
+    assert "example-api-prod-1234" in namespaces_html
+    assert "Example Product" in namespaces_html

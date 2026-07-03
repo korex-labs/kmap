@@ -1,12 +1,14 @@
 """Dependency relation construction and grouping helpers."""
 
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any
 
+from ...inspection.source_rank import source_rank
+from ...lists import append_truthy_unique
 from .indexing import build_entry_index, dependency_entry_hits
 
 
-def merge_relation_metadata(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+def merge_relation_metadata(rows: list[dict[str, Any]]) -> dict[str, Any]:
     database_names = []
     database_source_vars = []
     database_sources = []
@@ -32,13 +34,12 @@ def merge_relation_metadata(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"database": {key: value for key, value in database_out.items() if value}}
 
 
-def append_unique_values(target: List[Any], values: List[Any]) -> None:
+def append_unique_values(target: list[Any], values: list[Any]) -> None:
     for value in values:
-        if value and value not in target:
-            target.append(value)
+        append_truthy_unique(target, value)
 
 
-def merge_relation_group(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+def merge_relation_group(rows: list[dict[str, Any]]) -> dict[str, Any]:
     best = dict(best_relation_candidate(rows))
     metadata = merge_relation_metadata(rows)
     if metadata:
@@ -46,7 +47,7 @@ def merge_relation_group(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     return best
 
 
-def best_relation_candidate(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+def best_relation_candidate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     priority = {
         "Service:same_namespace": 100,
         "Ingress:same_namespace": 90,
@@ -57,22 +58,22 @@ def best_relation_candidate(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         "external": 10,
     }
 
-    def key(row: Dict[str, Any]) -> tuple[int, int, Any]:
+    def key(row: dict[str, Any]) -> tuple[int, int, Any]:
         match_type = row.get("match_type") or ""
         source_origin = row.get("source_origin") or ""
-        origin_rank = {"VaultEnv": 4, "Env": 3, "Secret": 2, "ConfigMap": 1}.get(source_origin, 0)
+        origin_rank = source_rank(source_origin)
         return (priority.get(match_type, 0), origin_rank, row.get("source_var", ""))
 
     return sorted(rows, key=key, reverse=True)[0]
 
 
 def build_dependency_rows(
-    services: List[Dict[str, Any]],
-    system_naming_config: Dict[str, Any] | None = None,
-) -> List[Dict[str, Any]]:
+    services: list[dict[str, Any]],
+    system_naming_config: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     entry_index = build_entry_index(services, system_naming_config)
 
-    relations: List[Dict[str, Any]] = []
+    relations: list[dict[str, Any]] = []
     for service in services:
         for dependency in service.get("dependency_candidates", []):
             hits = dependency_entry_hits(dependency, service, entry_index, system_naming_config)
@@ -105,7 +106,7 @@ def build_dependency_rows(
     return final_rows
 
 
-def external_dependency_row(service: Dict[str, Any], dependency: Dict[str, Any]) -> Dict[str, Any]:
+def external_dependency_row(service: dict[str, Any], dependency: dict[str, Any]) -> dict[str, Any]:
     row = {
         "source_service": service["service_id"],
         "source_var": dependency.get("var") or "",
@@ -122,8 +123,8 @@ def external_dependency_row(service: Dict[str, Any], dependency: Dict[str, Any])
 
 
 def internal_dependency_rows(
-    service: Dict[str, Any], dependency: Dict[str, Any], hits: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    service: dict[str, Any], dependency: dict[str, Any], hits: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     rows = []
     same_namespace = [
         hit for hit in hits if hit["cluster"] == service["cluster"] and hit["namespace"] == service["namespace"]

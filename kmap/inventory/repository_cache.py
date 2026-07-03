@@ -7,6 +7,7 @@ from ..config import clean_metadata_string
 from ..io import dump_json, ensure_dir, load_required_json_file
 from ..logging import eprint
 from .repository_model import REPOSITORY_CACHE_SCHEMA_VERSION, RepositoryRecord
+from .schema import require_schema_version
 
 
 def write_repository_cache(path: Path, records: list[RepositoryRecord], *, provider: str, base_url: str) -> Path:
@@ -28,8 +29,12 @@ def load_repository_cache(path: Path) -> list[RepositoryRecord]:
     if not path.exists():
         return []
     payload = load_required_json_file(path)
-    if int(payload.get("schema_version") or 0) != REPOSITORY_CACHE_SCHEMA_VERSION:
-        raise SystemExit(f"Unsupported repository cache schema version in {path}")
+    require_schema_version(
+        payload,
+        expected=REPOSITORY_CACHE_SCHEMA_VERSION,
+        source=path,
+        kind="repository cache",
+    )
     return [
         repository_record_from_cache_item(item) for item in payload.get("repositories") or [] if isinstance(item, dict)
     ]

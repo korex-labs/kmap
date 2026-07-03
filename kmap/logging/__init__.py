@@ -29,13 +29,13 @@ from .runner import completed_process_message, first_non_empty, run_cmd
 _ACTIVE_PROGRESS = _progress._ACTIVE_PROGRESS
 
 
-def set_active_progress(progress):
+def set_active_progress(progress: ProgressBar | None) -> ProgressBar | None:
     previous = _progress.set_active_progress(progress)
     globals()["_ACTIVE_PROGRESS"] = _progress._ACTIVE_PROGRESS
     return previous
 
 
-def eprint(*args, **kwargs):
+def eprint(*args: object, **kwargs: object) -> None:
     progress = active_progress()
     if len(args) == 1 and isinstance(args[0], str):
         if output_mode() == "progress" and not should_print_in_progress(args[0]):

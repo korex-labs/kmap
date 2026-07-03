@@ -1,8 +1,6 @@
 """Generated system category and LikeC4 type inference."""
 
-from typing import Tuple
-
-INTERNAL_SYSTEM_TYPE_TOKENS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+INTERNAL_SYSTEM_TYPE_TOKENS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Mobile_App", ("mobile app", "android", "ios", "iphone")),
     ("VueJS_App", ("vue", "vuejs", "vue.js")),
     ("GoLang_App", ("golang", "go lang", " go ", "-go", "_go")),
@@ -38,6 +36,7 @@ def generated_system_category(name: str, project_name: str = "") -> str:
 
 
 def normalized_likec4_internal_system_type(name: str, project_name: str = "") -> str:
+    _ = project_name
     raw = name.lower()
     for element_type, tokens in INTERNAL_SYSTEM_TYPE_TOKENS:
         if any(token in raw for token in tokens):

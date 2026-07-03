@@ -1,13 +1,13 @@
 """Command redaction and display helpers."""
 
-from typing import List
+import shlex
 
 COMMAND_VALUE_OPTIONS = {"--context", "--kubeconfig", "--request-timeout", "--kube-context", "-o", "--output"}
 COMMAND_VALUE_OPTION_PREFIXES = ("--context=", "--kubeconfig=", "--request-timeout=", "--kube-context=")
 COMMAND_NAMESPACE_OPTIONS = {"-n", "--namespace"}
 
 
-def short_command(cmd: List[str]) -> str:
+def short_command(cmd: list[str]) -> str:
     cleaned = visible_command_parts(cmd)
     namespace = command_namespace(cmd)
     if namespace and cleaned and cleaned[0] == "kubectl":
@@ -15,8 +15,8 @@ def short_command(cmd: List[str]) -> str:
     return shlex_join(cleaned)
 
 
-def visible_command_parts(cmd: List[str]) -> List[str]:
-    cleaned: List[str] = []
+def visible_command_parts(cmd: list[str]) -> list[str]:
+    cleaned: list[str] = []
     skip_next = False
     for part in cmd:
         if skip_next:
@@ -39,7 +39,7 @@ def command_part_is_hidden(part: str) -> bool:
     return part.startswith(COMMAND_VALUE_OPTION_PREFIXES) or part.startswith("--namespace=")
 
 
-def command_namespace(cmd: List[str]) -> str:
+def command_namespace(cmd: list[str]) -> str:
     for index, part in enumerate(cmd[:-1]):
         if part in {"-n", "--namespace"}:
             return cmd[index + 1]
@@ -49,13 +49,11 @@ def command_namespace(cmd: List[str]) -> str:
     return ""
 
 
-def shlex_join(cmd: List[str]) -> str:
+def shlex_join(cmd: list[str]) -> str:
     try:
-        import shlex
-
         return shlex.join(cmd)
-    except Exception:
-        return " ".join(cmd)
+    except TypeError:
+        return " ".join(str(part) for part in cmd)
 
 
 __all__ = [

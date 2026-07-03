@@ -39,7 +39,10 @@ def container_runtime_metadata_pairs(container: Dict[str, Any]) -> List[Tuple[st
     return items
 
 
-def update_container_runtime_metadata(container_entry: Dict[str, Any], svc: Dict[str, Any], container: Dict[str, Any]):
+def update_container_runtime_metadata(
+    container_entry: Dict[str, Any], svc: Dict[str, Any], container: Dict[str, Any]
+) -> None:
+    _ = svc
     runtime = container_entry.setdefault("runtime", {})
     for key in (
         "container_kinds",

@@ -31,7 +31,7 @@ class ProgressBar:
     label: str = "kmap"
     enabled: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.current = 0
         self.last_message = ""
         self.started_at = 0.0

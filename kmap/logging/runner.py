@@ -29,7 +29,7 @@ def run_cmd(
             text=True,
             timeout=timeout,
         )
-    except Exception:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         if progress and progress_failure:
             progress_command_failed(cmd)
         raise

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from kmap.model.reports import load_workloads_from_reports
+from kmap.model.reports import load_workloads_from_reports, workloads_from_report
 
 
 def test_load_workloads_from_reports_merges_report_discovery(tmp_path):
@@ -31,3 +31,11 @@ def test_load_workloads_from_reports_merges_report_discovery(tmp_path):
 def test_load_workloads_from_reports_requires_reports(tmp_path):
     with pytest.raises(SystemExit, match=r"No \*.report.json found"):
         load_workloads_from_reports(tmp_path)
+
+
+def test_workloads_from_report_rejects_malformed_workload_payloads():
+    with pytest.raises(SystemExit, match="Invalid report workloads"):
+        workloads_from_report({"workloads": "bad"})
+
+    with pytest.raises(SystemExit, match="Invalid report workload"):
+        workloads_from_report({"workloads": ["bad"]})

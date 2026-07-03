@@ -63,8 +63,8 @@ def distinct_discovery_targets(targets: list) -> list[dict]:
 
 
 def first_failure_line(message: str) -> str:
-    for line in (message or "").splitlines():
-        line = line.strip()
+    for raw_line in (message or "").splitlines():
+        line = raw_line.strip()
         if line:
             return line
     return ""

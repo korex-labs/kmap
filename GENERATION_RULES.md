@@ -31,6 +31,26 @@ artifacts/buckets/
 
 Generated product outputs must not overwrite curated common layers such as `Likec4/common`.
 
+## Inventory Contracts
+
+Cluster inventory JSON payloads use `schema_version: 1` and must remain backward compatible within that schema.
+
+- Cluster fragments live under `Inventory/clusters/<cluster>/fragments/<fragment>.json`. They contain `cluster`,
+  `fragment_id`, `generated_at`, `namespaces`, `repositories`, and `buckets`.
+- Namespace state lives under `Inventory/clusters/<cluster>/state/namespaces/<namespace>.json`. It contains
+  `cluster`, `namespace_name`, `last_seen_at`, a serialized `namespace` row, and deduplicated `buckets`.
+- Aggregate cluster inventory lives at `Inventory/clusters/<cluster>/inventory.json`. It contains `cluster`,
+  source `fragments`, source `states`, `last_seen_at`, merged `namespaces`, derived `repositories`, and merged
+  `buckets`.
+
+Namespace rows may include Kubernetes-discovered `labels` as a nested string mapping. Labels are discovered from
+live namespace metadata and must not be read from product config. When merging rows, richer product/repository
+metadata should win, but discovered labels should be preserved when the winning row does not carry labels.
+
+Bucket rows are deduplicated by lowercased `namespace`, `repository`, `bucket`, `endpoint`, and `source_var`.
+Fragment aggregation keeps the first duplicate bucket row; namespace state persistence keeps the newest duplicate
+row for the same key.
+
 ## Data Modes
 
 - `raw` may contain sensitive runtime values and should not be committed.

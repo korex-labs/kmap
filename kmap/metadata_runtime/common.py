@@ -1,8 +1,11 @@
 """Shared runtime metadata constants and collection helpers."""
 
-from typing import Any, Dict, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 from ..config import clean_metadata_string
+from ..lists import append_clean_unique as append_unique
+from ..lists import append_clean_unique_string as append_clean_unique
 
 OBSERVABILITY_METADATA_KEYS = (
     "prometheus_scrapes",
@@ -138,39 +141,18 @@ def short_join_metadata(values: Iterable[Any], limit: int = 5) -> str:
     return ", ".join(unique[:limit]) + f", +{len(unique) - limit} more"
 
 
-def append_unique(items: List[Any], value: Any) -> None:
-    if value is None:
-        return
-    if isinstance(value, str):
-        value = clean_metadata_string(value)
-        if not value:
-            return
-    if value not in items:
-        items.append(value)
-
-
-def append_runtime_scalars(runtime: Dict[str, List[Any]], source: Dict[str, Any], keys: Iterable[str]) -> None:
+def append_runtime_scalars(runtime: dict[str, list[Any]], source: dict[str, Any], keys: Iterable[str]) -> None:
     for key in keys:
         append_unique(runtime.setdefault(key, []), source.get(key))
 
 
-def append_clean_unique(values: List[str], value: Any) -> None:
-    if isinstance(value, list):
-        for item in value:
-            append_clean_unique(values, item)
-        return
-    text = clean_metadata_string(value)
-    if text and text not in values:
-        values.append(text)
-
-
 def joined_metadata_pairs(
-    source: Dict[str, Any],
-    metadata_items: Iterable[Tuple[str, str]],
+    source: dict[str, Any],
+    metadata_items: Iterable[tuple[str, str]],
     *,
     limit: int = 8,
-) -> List[Tuple[str, str]]:
-    pairs: List[Tuple[str, str]] = []
+) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
     for source_key, property_key in metadata_items:
         value = short_join_metadata(source.get(source_key) or [], limit=limit)
         if value:
@@ -178,7 +160,7 @@ def joined_metadata_pairs(
     return pairs
 
 
-def runtime_metadata_pairs(runtime: Dict[str, Any]) -> List[Tuple[str, str]]:
+def runtime_metadata_pairs(runtime: dict[str, Any]) -> list[tuple[str, str]]:
     return joined_metadata_pairs(runtime, RUNTIME_METADATA_ITEMS)
 
 

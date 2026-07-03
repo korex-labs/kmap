@@ -7,7 +7,7 @@ from typing import Any
 
 from ..config import slug_name
 from ..io import dump_json, write_text_atomic
-from .buckets import BucketUsageRow, render_buckets_html, storage_type_rules_from_config
+from .buckets import BucketUsageRow, bucket_usage_row_from_payload, render_buckets_html, storage_type_rules_from_config
 from .cluster_inventory import (
     ClusterInventory,
     cluster_dirs,
@@ -16,7 +16,7 @@ from .cluster_inventory import (
     load_cluster_inventory,
 )
 from .html import render_code_cell, render_inventory_page
-from .namespaces import InventoryRow, render_inventory_html
+from .namespaces import InventoryRow, inventory_row_from_payload, render_inventory_html
 from .row_payloads import BucketRowPayload, NamespaceRowPayload
 
 
@@ -97,22 +97,7 @@ def cluster_namespace_rows(inventory: ClusterInventory) -> list[InventoryRow]:
 
 
 def cluster_namespace_row(row: NamespaceRowPayload, *, fallback_cluster: str) -> InventoryRow:
-    return InventoryRow(
-        cluster=row.get("cluster", "") or fallback_cluster,
-        product=row.get("product", ""),
-        namespace=row.get("namespace", ""),
-        repository=row.get("repository", ""),
-        owner_team=row.get("owner_team", ""),
-        product_title=row.get("product_title", ""),
-        stage=row.get("stage", ""),
-        last_seen_at=row.get("last_seen_at", ""),
-        repository_id=row.get("repository_id", ""),
-        repository_name=row.get("repository_name", ""),
-        repository_path=row.get("repository_path", ""),
-        repository_group=row.get("repository_group", ""),
-        repository_archived=row.get("repository_archived", ""),
-        labels=row.get("labels", {}) if isinstance(row.get("labels"), dict) else {},
-    )
+    return inventory_row_from_payload(row, fallback_cluster=fallback_cluster)
 
 
 def cluster_bucket_rows(inventory: ClusterInventory) -> list[BucketUsageRow]:
@@ -120,24 +105,7 @@ def cluster_bucket_rows(inventory: ClusterInventory) -> list[BucketUsageRow]:
 
 
 def cluster_bucket_row(row: BucketRowPayload, *, fallback_cluster: str) -> BucketUsageRow:
-    return BucketUsageRow(
-        bucket=row.get("bucket", ""),
-        endpoint=row.get("endpoint", ""),
-        confidence=row.get("confidence", ""),
-        cluster=row.get("cluster", "") or fallback_cluster,
-        product=row.get("product", ""),
-        namespace=row.get("namespace", ""),
-        project=row.get("project", ""),
-        workload=row.get("workload", ""),
-        source=row.get("source", ""),
-        source_var=row.get("source_var", ""),
-        repository=row.get("repository", ""),
-        owner_team=row.get("owner_team", ""),
-        report_key=row.get("report_key", ""),
-        product_title=row.get("product_title", ""),
-        last_seen_at=row.get("last_seen_at", ""),
-        repository_archived=row.get("repository_archived", ""),
-    )
+    return bucket_usage_row_from_payload(row, fallback_cluster=fallback_cluster)
 
 
 def cluster_report_nav_links() -> list[tuple[str, str]]:

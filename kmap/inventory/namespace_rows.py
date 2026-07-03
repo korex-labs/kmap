@@ -8,9 +8,9 @@ from ..config import (
     clean_metadata_string,
     normalize_config_metadata,
     normalize_namespace_config,
-    validate_config_shape,
 )
-from ..io import load_yaml_config_or_error
+from .product_config import load_valid_product_config
+from .row_payloads import NamespaceRowPayload
 
 
 @dataclass(frozen=True)
@@ -44,6 +44,25 @@ class InventoryNamespaceContext:
     project_metadata: dict[str, dict[str, Any]]
 
 
+def inventory_row_from_payload(row: NamespaceRowPayload, *, fallback_cluster: str = "") -> InventoryRow:
+    return InventoryRow(
+        cluster=row.get("cluster", "") or fallback_cluster,
+        product=row.get("product", ""),
+        namespace=row.get("namespace", ""),
+        repository=row.get("repository", ""),
+        owner_team=row.get("owner_team", ""),
+        product_title=row.get("product_title", ""),
+        stage=row.get("stage", ""),
+        last_seen_at=row.get("last_seen_at", ""),
+        repository_id=row.get("repository_id", ""),
+        repository_name=row.get("repository_name", ""),
+        repository_path=row.get("repository_path", ""),
+        repository_group=row.get("repository_group", ""),
+        repository_archived=row.get("repository_archived", ""),
+        labels=row.get("labels", {}) if isinstance(row.get("labels"), dict) else {},
+    )
+
+
 def collect_inventory_rows(config_dir: Path) -> list[InventoryRow]:
     if not config_dir.exists():
         raise SystemExit(f"config directory not found: {config_dir}")
@@ -52,21 +71,12 @@ def collect_inventory_rows(config_dir: Path) -> list[InventoryRow]:
 
     rows: list[InventoryRow] = []
     for config_file in config_files(config_dir):
-        config = load_valid_inventory_config(config_file)
+        config = load_valid_product_config(config_file)
         rows.extend(inventory_rows_for_config(config))
     return sorted(
         rows,
         key=lambda row: (row.product.lower(), row.cluster.lower(), row.namespace.lower(), row.repository.lower()),
     )
-
-
-def load_valid_inventory_config(config_file: Path) -> dict[str, Any]:
-    config = load_yaml_config_or_error(config_file)
-    errors, _warnings = validate_config_shape(config)
-    if errors:
-        joined = "\n".join(f"- {error}" for error in errors)
-        raise SystemExit(f"Invalid product config: {config_file}\n{joined}")
-    return config
 
 
 def config_files(config_dir: Path) -> list[Path]:
@@ -191,8 +201,8 @@ __all__ = [
     "infer_stage_from_namespace",
     "inventory_row_for_namespace",
     "inventory_row_from_context",
+    "inventory_row_from_payload",
     "inventory_rows_for_config",
-    "load_valid_inventory_config",
     "namespace_cluster",
     "namespace_entries",
     "namespace_stage",

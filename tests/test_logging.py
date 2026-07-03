@@ -20,6 +20,7 @@ from kmap.logging import (
     run_cmd,
     set_active_progress,
     set_output_mode,
+    shlex_join,
     short_command,
     should_print_in_progress,
     visible_command_parts,
@@ -164,6 +165,10 @@ def test_command_part_helpers_strip_context_and_keep_namespace_for_display():
 
     assert visible_command_parts(cmd) == ["kubectl", "get", "pods", "--output=json"]
     assert command_namespace(cmd) == "payments"
+
+
+def test_shlex_join_falls_back_for_non_string_parts():
+    assert shlex_join(["kubectl", "get", 123]) == "kubectl get 123"
 
 
 def test_disabled_progress_bar_methods_are_noops(capsys):
@@ -317,6 +322,27 @@ def test_run_cmd_marks_progress_failed_by_default(monkeypatch):
     assert bar.total == 1
     assert bar.current == 0
     assert bar.last_message.startswith("failed")
+
+
+def test_run_cmd_does_not_mark_progress_failed_for_unexpected_errors(monkeypatch):
+    def fake_run(cmd, **kwargs):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr("kmap.logging.subprocess.run", fake_run)
+
+    previous_mode = set_output_mode("progress")
+    bar = ProgressBar(total=0, enabled=True)
+    previous_progress = set_active_progress(bar)
+    try:
+        with pytest.raises(RuntimeError, match="bug"):
+            run_cmd(["kubectl", "get", "pod"])
+    finally:
+        set_active_progress(previous_progress)
+        set_output_mode(previous_mode)
+
+    assert bar.total == 1
+    assert bar.current == 0
+    assert not bar.last_message.startswith("failed")
 
 
 def test_first_non_empty_uses_first_stripped_text():

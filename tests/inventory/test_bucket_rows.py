@@ -1,9 +1,12 @@
+import pytest
+
 from kmap.inventory.bucket_rows import (
     BucketUsageRow,
     best_confidence,
     bucket_row_dict,
     bucket_rows_for_report,
     bucket_rows_from_artifact,
+    bucket_source_family,
     looks_like_false_positive_bucket,
     looks_like_object_storage_endpoint,
     merge_bucket_usage_rows,
@@ -226,6 +229,31 @@ def test_bucket_rows_from_artifact_prefers_inventory_metadata():
     assert rows[0].report_key == "fallback"
 
 
+def test_bucket_rows_from_artifact_rejects_malformed_rows():
+    with pytest.raises(SystemExit, match="Invalid bucket report rows"):
+        bucket_rows_from_artifact(
+            {"schema_version": 1, "rows": "bad"},
+            {},
+            fallback_report_key="fallback",
+        )
+
+    with pytest.raises(SystemExit, match="Invalid bucket report row"):
+        bucket_rows_from_artifact(
+            {"schema_version": 1, "rows": ["bad"]},
+            {},
+            fallback_report_key="fallback",
+        )
+
+
+def test_bucket_rows_from_artifact_rejects_malformed_schema_version():
+    with pytest.raises(SystemExit, match="Unsupported bucket report schema version"):
+        bucket_rows_from_artifact(
+            {"schema_version": "bad", "rows": []},
+            {},
+            fallback_report_key="fallback",
+        )
+
+
 def test_bucket_signal_helpers_and_merge_precedence():
     assert looks_like_false_positive_bucket("prod") is True
     assert looks_like_false_positive_bucket("1.2.3") is True
@@ -233,6 +261,7 @@ def test_bucket_signal_helpers_and_merge_precedence():
     assert looks_like_object_storage_endpoint("minio.internal") is True
     assert looks_like_object_storage_endpoint("api.internal") is False
     assert best_confidence("low", "high") == "high"
+    assert bucket_source_family("AUTH_S3_BUCKET") == "AUTH_S3"
 
     rows = merge_bucket_usage_rows(
         [

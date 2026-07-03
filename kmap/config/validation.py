@@ -1,8 +1,9 @@
 """Config validation rules."""
 
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
+from ..validators import unknown_keys
 from .metadata import clean_metadata_string
 from .options import normalize_system_naming_config
 from .projects import PRODUCT_OWNER_ALIASES
@@ -18,11 +19,7 @@ from .validation_resources import (
 DISCOVERY_CONFIG_KEYS = {"context", "kubeconfig"}
 
 
-def _unknown_keys(item: Dict[str, Any], allowed_keys: set[str]) -> List[str]:
-    return sorted(set(item.keys()) - allowed_keys)
-
-
-def _validate_required_fields(config: Dict[str, Any], errors: List[str], warnings: List[str]) -> None:
+def _validate_required_fields(config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
     errors.extend(
         f"{field}: required" for field in ("product", "title", "env") if not clean_metadata_string(config.get(field))
     )
@@ -30,7 +27,7 @@ def _validate_required_fields(config: Dict[str, Any], errors: List[str], warning
         warnings.append("owner_team: recommended")
 
 
-def _validate_namespace_project(ns_path: str, project: Any, errors: List[str]) -> None:
+def _validate_namespace_project(ns_path: str, project: Any, errors: list[str]) -> None:
     if project is not None and not isinstance(project, (dict, str)):
         errors.append(f"{ns_path}.project: expected mapping or string")
     if isinstance(project, dict):
@@ -44,8 +41,8 @@ def _validate_discovery_mapping(
     path: str,
     discovery: Any,
     unknown_key_message: str,
-    errors: List[str],
-    warnings: List[str],
+    errors: list[str],
+    warnings: list[str],
 ) -> None:
     if discovery is None:
         return
@@ -60,15 +57,15 @@ def _validate_discovery_mapping(
     )
     warnings.extend(
         unknown_key_message.format(unknown_key=unknown_key)
-        for unknown_key in _unknown_keys(discovery, DISCOVERY_CONFIG_KEYS)
+        for unknown_key in unknown_keys(discovery, DISCOVERY_CONFIG_KEYS)
     )
 
 
 def _validate_namespace_mapping_entry(
     namespace: Any,
     entry: Any,
-    errors: List[str],
-    warnings: List[str],
+    errors: list[str],
+    warnings: list[str],
 ) -> None:
     ns_path = path_join("namespaces", namespace)
     if not clean_metadata_string(namespace):
@@ -94,11 +91,11 @@ def _validate_namespace_mapping_entry(
     )
     warnings.extend(
         f"{ns_path}.{unknown_key}: unknown namespace config key"
-        for unknown_key in _unknown_keys(entry, {"project", "resources", "discovery"})
+        for unknown_key in unknown_keys(entry, {"project", "resources", "discovery"})
     )
 
 
-def _validate_namespaces(config: Dict[str, Any], errors: List[str], warnings: List[str]) -> None:
+def _validate_namespaces(config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
     raw_namespaces = config.get("namespaces") or config.get("namespace")
     if not raw_namespaces:
         errors.append("namespaces: required and must not be empty")
@@ -113,7 +110,7 @@ def _validate_namespaces(config: Dict[str, Any], errors: List[str], warnings: Li
             _validate_namespace_mapping_entry(namespace, entry, errors, warnings)
 
 
-def _validate_projects(config: Dict[str, Any], errors: List[str]) -> None:
+def _validate_projects(config: dict[str, Any], errors: list[str]) -> None:
     projects = config.get("projects")
     if projects is not None and not isinstance(projects, dict):
         errors.append("projects: expected mapping")
@@ -126,10 +123,10 @@ def _validate_projects(config: Dict[str, Any], errors: List[str]) -> None:
             validate_element_type(project_path, project, errors)
 
 
-def _validate_system_naming(config: Dict[str, Any], errors: List[str]) -> None:
+def _validate_system_naming(config: dict[str, Any], errors: list[str]) -> None:
     try:
         normalized = normalize_system_naming_config(config)
-    except Exception as exc:
+    except (TypeError, ValueError) as exc:
         errors.append(f"system_naming: invalid: {exc}")
         return
 
@@ -140,7 +137,7 @@ def _validate_system_naming(config: Dict[str, Any], errors: List[str]) -> None:
             errors.append(f"system_naming.service_aliases.rewrites[{index}].match_regex: invalid regex: {exc}")
 
 
-def _validate_misc_config(config: Dict[str, Any], errors: List[str], warnings: List[str]) -> None:
+def _validate_misc_config(config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
     _validate_dependency_hotspots_config(config, errors)
     _validate_render_config(config, errors)
 
@@ -154,21 +151,21 @@ def _validate_misc_config(config: Dict[str, Any], errors: List[str], warnings: L
     )
 
 
-def _validate_dependency_hotspots_config(config: Dict[str, Any], errors: List[str]) -> None:
+def _validate_dependency_hotspots_config(config: dict[str, Any], errors: list[str]) -> None:
     hotspot = config.get("dependency_hotspots")
     if hotspot is not None and not isinstance(hotspot, dict):
         errors.append("dependency_hotspots: expected mapping")
 
 
-def _validate_render_config(config: Dict[str, Any], errors: List[str]) -> None:
+def _validate_render_config(config: dict[str, Any], errors: list[str]) -> None:
     render = clean_metadata_string(config.get("render"))
     if render and render not in {"structurizr", "likec4", "both"}:
         errors.append("render: expected one of structurizr, likec4, both")
 
 
-def validate_config_shape(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
-    errors: List[str] = []
-    warnings: List[str] = []
+def validate_config_shape(config: dict[str, Any]) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
     _validate_required_fields(config, errors, warnings)
     validate_product_resources(config, errors)
     _validate_namespaces(config, errors, warnings)

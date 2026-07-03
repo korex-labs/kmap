@@ -1,6 +1,6 @@
 """Structurizr single-model rendering."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ...identifiers import q
 from .elements import internal_system_lines, system_lines
@@ -8,15 +8,15 @@ from .references import structurizr_reference_map
 from .relations import deduplicated_structurizr_relationships, structurizr_relationship_technology
 
 
-def structurizr_model_context(architecture: Dict[str, Any]) -> Dict[str, Any]:
+def structurizr_model_context(architecture: dict[str, Any]) -> dict[str, Any]:
     refs = structurizr_reference_map(architecture)
     systems_by_id = {system.get("id"): system for system in architecture.get("systems") or []}
     projects_by_id = {project.get("id"): project for project in architecture.get("projects") or []}
-    containers_by_system: Dict[str, List[Dict[str, Any]]] = {}
+    containers_by_system: dict[str, list[dict[str, Any]]] = {}
     for container in architecture.get("containers") or []:
         system_id = container.get("system_id") or ""
         containers_by_system.setdefault(system_id, []).append(container)
-    inbound_counts: Dict[str, int] = {}
+    inbound_counts: dict[str, int] = {}
     for relationship in architecture.get("relationships") or []:
         target_id = relationship.get("target_id") or ""
         if target_id:
@@ -31,11 +31,11 @@ def structurizr_model_context(architecture: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def render_project_model(
-    architecture: Dict[str, Any],
-    project: Dict[str, Any],
-    context: Dict[str, Any],
+    architecture: dict[str, Any],
+    project: dict[str, Any],
+    context: dict[str, Any],
 ) -> str:
-    lines: List[str] = []
+    lines: list[str] = []
     project_id = project.get("id") or ""
     systems = [system for system in architecture.get("systems") or [] if (system.get("project_id") or "") == project_id]
     for system in sorted(systems, key=lambda item: item.get("id") or ""):
@@ -55,11 +55,12 @@ def render_project_model(
 
 
 def render_external_model(
-    architecture: Dict[str, Any],
-    systems: List[Dict[str, Any]],
-    context: Dict[str, Any],
+    architecture: dict[str, Any],
+    systems: list[dict[str, Any]],
+    context: dict[str, Any],
 ) -> str:
-    lines: List[str] = []
+    _ = architecture
+    lines: list[str] = []
     for system in systems:
         if lines:
             lines.append("")
@@ -74,9 +75,9 @@ def render_external_model(
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def render_structurizr_model(architecture: Dict[str, Any]) -> str:
+def render_structurizr_model(architecture: dict[str, Any]) -> str:
     context = structurizr_model_context(architecture)
-    lines: List[str] = []
+    lines: list[str] = []
     internal_systems = [system for system in architecture.get("systems") or [] if system.get("project_id")]
     external_systems = [system for system in architecture.get("systems") or [] if not system.get("project_id")]
 
@@ -88,10 +89,10 @@ def render_structurizr_model(architecture: Dict[str, Any]) -> str:
 
 
 def _append_internal_systems(
-    lines: List[str],
-    systems: List[Dict[str, Any]],
-    architecture: Dict[str, Any],
-    context: Dict[str, Any],
+    lines: list[str],
+    systems: list[dict[str, Any]],
+    architecture: dict[str, Any],
+    context: dict[str, Any],
 ) -> None:
     for system in systems:
         project = context["projects_by_id"].get(system.get("project_id") or "")
@@ -110,7 +111,7 @@ def _append_internal_systems(
         )
 
 
-def _append_external_systems(lines: List[str], systems: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
+def _append_external_systems(lines: list[str], systems: list[dict[str, Any]], context: dict[str, Any]) -> None:
     for system in systems:
         _append_spaced_lines(
             lines,
@@ -123,20 +124,20 @@ def _append_external_systems(lines: List[str], systems: List[Dict[str, Any]], co
         )
 
 
-def _append_spaced_lines(lines: List[str], new_lines: List[str]) -> None:
+def _append_spaced_lines(lines: list[str], new_lines: list[str]) -> None:
     if lines:
         lines.append("")
     lines.extend(new_lines)
 
 
-def _relationship_lines(architecture: Dict[str, Any], refs: Dict[str, str]) -> List[str]:
+def _relationship_lines(architecture: dict[str, Any], refs: dict[str, str]) -> list[str]:
     return [
         _relationship_line(relationship, refs)
         for relationship in deduplicated_structurizr_relationships(architecture.get("relationships") or [], refs)
     ]
 
 
-def _relationship_line(relationship: Dict[str, Any], refs: Dict[str, str]) -> str:
+def _relationship_line(relationship: dict[str, Any], refs: dict[str, str]) -> str:
     source = refs.get(relationship.get("source_id") or "")
     target = refs.get(relationship.get("target_id") or "")
     technology = structurizr_relationship_technology(relationship)

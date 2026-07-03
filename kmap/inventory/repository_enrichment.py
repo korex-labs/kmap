@@ -1,6 +1,7 @@
 """Inventory row enrichment from repository catalog records."""
 
 import os
+from dataclasses import replace
 from urllib.error import HTTPError, URLError
 
 from ..logging import eprint
@@ -42,21 +43,7 @@ def attach_repository_id(row: InventoryRow, heuristics: dict[str, object]) -> In
     repository_id = namespace_project_id(row.namespace, heuristics)
     if not repository_id:
         return row
-    return InventoryRow(
-        cluster=row.cluster,
-        product=row.product,
-        namespace=row.namespace,
-        repository=row.repository,
-        owner_team=row.owner_team,
-        product_title=row.product_title,
-        stage=row.stage,
-        last_seen_at=row.last_seen_at,
-        repository_id=repository_id,
-        repository_name=row.repository_name,
-        repository_path=row.repository_path,
-        repository_group=row.repository_group,
-        repository_archived=row.repository_archived,
-    )
+    return replace(row, repository_id=repository_id)
 
 
 def repository_records_for_inventory(
@@ -98,15 +85,9 @@ def enrich_inventory_row(row: InventoryRow, index: dict[str, RepositoryRecord]) 
     )
     if record is None:
         return row
-    return InventoryRow(
-        cluster=row.cluster,
-        product=row.product,
-        namespace=row.namespace,
+    return replace(
+        row,
         repository=enriched_repository_url(row.repository, record),
-        owner_team=row.owner_team,
-        product_title=row.product_title,
-        stage=row.stage,
-        last_seen_at=row.last_seen_at,
         repository_id=record.id,
         repository_name=record.name,
         repository_path=record.path_with_namespace,
