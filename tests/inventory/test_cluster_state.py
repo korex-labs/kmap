@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from kmap.inventory.buckets import BucketUsageRow
@@ -22,6 +23,7 @@ def test_write_namespace_state_files_writes_one_file_per_namespace_with_last_see
                 namespace="api-prod",
                 repository="https://git.example/api",
                 owner_team="Ops",
+                labels={"app": "api", "team": "platform"},
                 stage="prod",
             )
         ],
@@ -50,6 +52,46 @@ def test_write_namespace_state_files_writes_one_file_per_namespace_with_last_see
     assert '"namespace_name": "api-prod"' in payload
     assert '"repository": "https://git.example/api"' in payload
     assert '"bucket": "reports"' in payload
+    assert json.loads(payload) == {
+        "schema_version": 1,
+        "cluster": "cluster-a",
+        "namespace_name": "api-prod",
+        "last_seen_at": "2026-05-20T09:30:00+00:00",
+        "namespace": {
+            "cluster": "cluster-a",
+            "namespace": "api-prod",
+            "stage": "prod",
+            "labels": {"app": "api", "team": "platform"},
+            "product": "demo",
+            "product_title": "",
+            "repository": "https://git.example/api",
+            "repository_id": "",
+            "repository_name": "",
+            "repository_path": "",
+            "repository_group": "",
+            "repository_archived": "",
+            "owner_team": "Ops",
+        },
+        "buckets": [
+            {
+                "bucket": "reports",
+                "endpoint": "reports.s3.example.com",
+                "confidence": "high",
+                "cluster": "cluster-a",
+                "product": "demo",
+                "namespace": "api-prod",
+                "project": "demo",
+                "workload": "api",
+                "source": "Env",
+                "source_var": "S3_BUCKET",
+                "repository": "https://git.example/api",
+                "owner_team": "Ops",
+                "report_key": "",
+                "product_title": "",
+                "last_seen_at": "2026-05-20T09:30:00+00:00",
+            }
+        ],
+    }
 
 
 def test_write_namespace_state_files_preserves_better_existing_metadata(tmp_path):

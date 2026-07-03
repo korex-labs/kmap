@@ -6,12 +6,17 @@ import pytest
 from kmap.inventory import full_discovery, full_discovery_namespaces
 from kmap.inventory.full_discovery import (
     cluster_kubectl_client,
+    discover_cluster_namespace_inventory,
     discover_cluster_namespace_labels,
     discover_cluster_namespaces,
     discover_full_inventory,
     discovered_namespace_rows,
 )
-from kmap.inventory.full_discovery_client import namespace_item_labels, namespace_item_name
+from kmap.inventory.full_discovery_client import (
+    namespace_inventory_from_items,
+    namespace_item_labels,
+    namespace_item_name,
+)
 from kmap.inventory.full_discovery_namespaces import (
     NamespacePersistenceContext,
     inspect_and_persist_namespace,
@@ -83,6 +88,23 @@ def test_discover_cluster_namespace_labels_reads_live_namespace_metadata(monkeyp
     }
 
 
+def test_discover_cluster_namespace_inventory_fetches_names_and_labels_once(monkeypatch, tmp_path):
+    calls = []
+
+    class CountingClient(FakeClient):
+        def get_json(self, kind, namespace=None):
+            calls.append((kind, namespace))
+            return super().get_json(kind, namespace)
+
+    monkeypatch.setattr(full_discovery, "KubectlClient", CountingClient)
+
+    inventory = discover_cluster_namespace_inventory(full_args(tmp_path))
+
+    assert inventory.namespaces == ["api-prod", "worker-dev"]
+    assert inventory.labels_by_namespace == {"api-prod": {"app.kubernetes.io/name": "api", "empty": ""}}
+    assert calls == [("namespace", "")]
+
+
 def test_namespace_item_label_helpers_tolerate_malformed_metadata():
     assert namespace_item_name({}) == ""
     assert namespace_item_name({"metadata": {"name": 123}}) == "123"
@@ -92,6 +114,20 @@ def test_namespace_item_label_helpers_tolerate_malformed_metadata():
         "enabled": "True",
         "revision": "3",
     }
+
+
+def test_namespace_inventory_from_items_keeps_names_and_valid_labels_together():
+    inventory = namespace_inventory_from_items(
+        [
+            {"metadata": {"name": "worker-dev"}},
+            {"metadata": {"name": "api-prod", "labels": {"team": "platform"}}},
+            {"metadata": {"labels": {"ignored": "missing-name"}}},
+            {"metadata": {"name": "", "labels": {"ignored": "blank-name"}}},
+        ]
+    )
+
+    assert inventory.namespaces == ["api-prod", "worker-dev"]
+    assert inventory.labels_by_namespace == {"api-prod": {"team": "platform"}}
 
 
 def test_discover_cluster_namespace_labels_skips_namespaces_without_valid_labels(monkeypatch, tmp_path):

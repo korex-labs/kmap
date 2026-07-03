@@ -1,9 +1,16 @@
 """Kubernetes client helpers for full inventory discovery."""
 
 import argparse
+from dataclasses import dataclass
 from typing import Any
 
 from ..kubernetes.client import KubectlClient
+
+
+@dataclass(frozen=True)
+class ClusterNamespaceInventory:
+    namespaces: list[str]
+    labels_by_namespace: dict[str, dict[str, str]]
 
 
 def cluster_kubectl_client(
@@ -32,19 +39,19 @@ def cluster_kubectl_client(
 def discover_cluster_namespaces(
     args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
 ) -> list[str]:
-    namespaces = discover_cluster_namespace_items(args, client_class=client_class)
-    return sorted(namespace_item_name(item) for item in namespaces if namespace_item_name(item))
+    return discover_cluster_namespace_inventory(args, client_class=client_class).namespaces
 
 
 def discover_cluster_namespace_labels(
     args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
 ) -> dict[str, dict[str, str]]:
-    namespaces = discover_cluster_namespace_items(args, client_class=client_class)
-    return {
-        name: labels
-        for item in namespaces
-        if (name := namespace_item_name(item)) and (labels := namespace_item_labels(item))
-    }
+    return discover_cluster_namespace_inventory(args, client_class=client_class).labels_by_namespace
+
+
+def discover_cluster_namespace_inventory(
+    args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
+) -> ClusterNamespaceInventory:
+    return namespace_inventory_from_items(discover_cluster_namespace_items(args, client_class=client_class))
 
 
 def discover_cluster_namespace_items(
@@ -73,11 +80,31 @@ def namespace_item_labels(item: dict[str, Any]) -> dict[str, str]:
     return {str(key): str(value or "") for key, value in labels.items() if str(key)}
 
 
+def namespace_inventory_from_items(items: list[dict[str, Any]]) -> ClusterNamespaceInventory:
+    namespaces: list[str] = []
+    labels_by_namespace: dict[str, dict[str, str]] = {}
+    for item in items:
+        name = namespace_item_name(item)
+        if not name:
+            continue
+        namespaces.append(name)
+        labels = namespace_item_labels(item)
+        if labels:
+            labels_by_namespace[name] = labels
+    return ClusterNamespaceInventory(
+        namespaces=sorted(namespaces),
+        labels_by_namespace=labels_by_namespace,
+    )
+
+
 __all__ = [
+    "ClusterNamespaceInventory",
     "cluster_kubectl_client",
+    "discover_cluster_namespace_inventory",
     "discover_cluster_namespace_items",
     "discover_cluster_namespace_labels",
     "discover_cluster_namespaces",
+    "namespace_inventory_from_items",
     "namespace_item_labels",
     "namespace_item_name",
 ]

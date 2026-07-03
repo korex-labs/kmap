@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from kmap.inventory.cluster_inventory import load_cluster_inventory
@@ -40,7 +41,54 @@ def test_render_cluster_reports_writes_aggregate_json_and_html(tmp_path):
     )
 
     assert [path.name for path in written] == ["inventory.json", "namespaces.html", "buckets.html", "clusters.html"]
-    assert '"cluster": "cluster-a"' in (cluster_dir / "inventory.json").read_text(encoding="utf-8")
+    inventory_payload = json.loads((cluster_dir / "inventory.json").read_text(encoding="utf-8"))
+    assert inventory_payload == {
+        "schema_version": 1,
+        "cluster": "cluster-a",
+        "generated_at": "2026-05-19T09:30:00+00:00",
+        "fragments": ["team-a"],
+        "states": [],
+        "last_seen_at": "",
+        "namespaces": [
+            {
+                "cluster": "cluster-a",
+                "namespace": "api-prod",
+                "stage": "prod",
+                "labels": {"app": "api"},
+                "product": "demo",
+                "product_title": "Demo Payments",
+                "repository": "https://git.example/api",
+                "owner_team": "Ops",
+            }
+        ],
+        "repositories": [
+            {
+                "repository": "https://git.example/api",
+                "namespaces": ["api-prod"],
+                "products": ["demo"],
+                "owner_team": "Ops",
+                "repository_id": "",
+                "repository_name": "",
+                "repository_path": "",
+                "repository_group": "",
+                "repository_archived": "",
+            }
+        ],
+        "buckets": [
+            {
+                "bucket": "reports",
+                "endpoint": "",
+                "confidence": "high",
+                "cluster": "cluster-a",
+                "namespace": "api-prod",
+                "repository": "https://git.example/api",
+                "owner_team": "Ops",
+                "product": "demo",
+                "product_title": "Demo Payments",
+                "source_var": "S3_BUCKET",
+            }
+        ],
+    }
     assert "cluster-a Product Namespaces" in (cluster_dir / "namespaces.html").read_text(encoding="utf-8")
     assert "cluster-a Storage Buckets" in (cluster_dir / "buckets.html").read_text(encoding="utf-8")
     assert "Cluster Inventory" in (tmp_path / "Inventory" / "clusters.html").read_text(encoding="utf-8")
