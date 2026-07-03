@@ -2,7 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-SOURCE_VERSION = "1.0.0"
+SOURCE_VERSION = "1.1.1"
 
 
 def package_version() -> str:
