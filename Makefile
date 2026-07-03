@@ -68,7 +68,7 @@ validate-structurizr:
 
 validate: validate-likec4 validate-structurizr
 
-check: lint format-check lint-complexity test validate
+check: lint format-check lint-complexity coverage validate
 
 clean:
 	find kmap tests -type d -name __pycache__ -prune -exec rm -r {} +
