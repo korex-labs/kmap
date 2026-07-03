@@ -36,7 +36,9 @@ def merge_namespace_rows(target: dict[str, dict[str, str]], rows: list[dict[str,
         normalized = normalize_string_dict(row)
         existing = target.get(namespace)
         if existing is None or row_quality(normalized) > row_quality(existing):
-            target[namespace] = normalized
+            target[namespace] = namespace_row_with_labels(normalized, existing)
+        elif normalized.get("labels") and not existing.get("labels"):
+            existing["labels"] = normalized["labels"]
 
 
 def merge_bucket_rows(
@@ -48,11 +50,23 @@ def merge_bucket_rows(
         target.setdefault(bucket_key(normalized), normalized)
 
 
-def normalize_string_dict(row: dict[str, Any]) -> dict[str, str]:
-    return {str(key): str(value or "") for key, value in row.items()}
+def normalize_string_dict(row: dict[str, Any]) -> dict[str, Any]:
+    return {str(key): normalize_row_value(key, value) for key, value in row.items()}
 
 
-def row_quality(row: dict[str, str]) -> tuple[int, int]:
+def normalize_row_value(key: Any, value: Any) -> Any:
+    if key == "labels" and isinstance(value, dict):
+        return {str(label_key): str(label_value or "") for label_key, label_value in value.items() if str(label_key)}
+    return str(value or "")
+
+
+def namespace_row_with_labels(row: dict[str, Any], existing: dict[str, Any] | None) -> dict[str, Any]:
+    if row.get("labels") or not existing or not existing.get("labels"):
+        return row
+    return {**row, "labels": existing["labels"]}
+
+
+def row_quality(row: dict[str, Any]) -> tuple[int, int]:
     valued_fields = sum(1 for key in ("repository", "owner_team", "product", "product_title", "stage") if row.get(key))
     return (valued_fields, len(row.get("repository", "")))
 

@@ -6,6 +6,7 @@ import pytest
 from kmap.inventory import full_discovery, full_discovery_namespaces
 from kmap.inventory.full_discovery import (
     cluster_kubectl_client,
+    discover_cluster_namespace_labels,
     discover_cluster_namespaces,
     discover_full_inventory,
     discovered_namespace_rows,
@@ -33,7 +34,7 @@ class FakeClient:
         return {
             "items": [
                 {"metadata": {"name": "worker-dev"}},
-                {"metadata": {"name": "api-prod"}},
+                {"metadata": {"name": "api-prod", "labels": {"app.kubernetes.io/name": "api", "empty": ""}}},
             ]
         }
 
@@ -71,6 +72,14 @@ def test_discover_cluster_namespaces_sorts_live_namespace_names(monkeypatch, tmp
     monkeypatch.setattr(full_discovery, "KubectlClient", FakeClient)
 
     assert discover_cluster_namespaces(full_args(tmp_path)) == ["api-prod", "worker-dev"]
+
+
+def test_discover_cluster_namespace_labels_reads_live_namespace_metadata(monkeypatch, tmp_path):
+    monkeypatch.setattr(full_discovery, "KubectlClient", FakeClient)
+
+    assert discover_cluster_namespace_labels(full_args(tmp_path)) == {
+        "api-prod": {"app.kubernetes.io/name": "api", "empty": ""}
+    }
 
 
 def test_discover_cluster_namespaces_fails_when_cluster_unreachable(monkeypatch, tmp_path):
@@ -137,6 +146,7 @@ def test_discovered_namespace_rows_enriches_known_namespaces_and_keeps_unknowns(
                 stage="prod",
             )
         },
+        labels_by_namespace={"api-prod": {"app": "api"}},
     )
 
     assert rows[0] == InventoryRow(
@@ -146,6 +156,7 @@ def test_discovered_namespace_rows_enriches_known_namespaces_and_keeps_unknowns(
         namespace="api-prod",
         repository="https://git.example/api",
         owner_team="Ops",
+        labels={"app": "api"},
         stage="prod",
     )
     assert rows[1].namespace == "unknown-review"
@@ -240,7 +251,7 @@ namespaces:
     class DiscoveryClient(FakeClient):
         def get_json(self, kind, namespace=None):
             if kind == "namespace":
-                return {"items": [{"metadata": {"name": "api-prod"}}]}
+                return {"items": [{"metadata": {"name": "api-prod", "labels": {"app": "api"}}}]}
             if kind == "deploy":
                 return {
                     "items": [
@@ -281,10 +292,15 @@ namespaces:
     report = tmp_path / "reports" / "cluster-a" / "api-prod.report.json"
     assert state_file.exists()
     assert '"namespace": "api-prod"' in state_file.read_text(encoding="utf-8")
+    assert '"labels": {' in state_file.read_text(encoding="utf-8")
+    assert '"app": "api"' in state_file.read_text(encoding="utf-8")
     assert '"bucket": "demo-bucket"' in state_file.read_text(encoding="utf-8")
     assert '"bucket": "demo-bucket"' in report.read_text(encoding="utf-8")
     assert (tmp_path / "Inventory" / "clusters" / "cluster-a" / "inventory.json").exists()
-    assert (tmp_path / "Inventory" / "clusters" / "cluster-a" / "namespaces.html").exists()
+    namespaces_html = (tmp_path / "Inventory" / "clusters" / "cluster-a" / "namespaces.html").read_text(
+        encoding="utf-8"
+    )
+    assert '<span class="chip namespace-label">app=api</span>' in namespaces_html
 
 
 def test_discover_full_inventory_flushes_namespace_state_before_later_namespace_fails(monkeypatch, tmp_path):

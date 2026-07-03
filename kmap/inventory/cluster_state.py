@@ -77,7 +77,12 @@ def namespace_state_payload(
     best_namespace = (
         current_namespace
         if row_quality(current_namespace) >= row_quality(existing_namespace)
-        else {**existing_namespace, "cluster": cluster, "namespace": namespace_row.namespace}
+        else {
+            **existing_namespace,
+            "cluster": cluster,
+            "namespace": namespace_row.namespace,
+            "labels": current_namespace.get("labels") or existing_namespace.get("labels", {}),
+        }
     )
     return {
         "schema_version": CLUSTER_INVENTORY_SCHEMA_VERSION,
@@ -145,11 +150,17 @@ def bucket_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
     )
 
 
-def normalize_string_dict(row: dict[str, Any]) -> dict[str, str]:
-    return {str(key): str(value or "") for key, value in row.items()}
+def normalize_string_dict(row: dict[str, Any]) -> dict[str, Any]:
+    return {str(key): normalize_row_value(key, value) for key, value in row.items()}
 
 
-def row_quality(row: dict[str, str]) -> tuple[int, int]:
+def normalize_row_value(key: Any, value: Any) -> Any:
+    if key == "labels" and isinstance(value, dict):
+        return {str(label_key): str(label_value or "") for label_key, label_value in value.items() if str(label_key)}
+    return str(value or "")
+
+
+def row_quality(row: dict[str, Any]) -> tuple[int, int]:
     valued_fields = sum(1 for key in ("repository", "owner_team", "product", "product_title", "stage") if row.get(key))
     return (valued_fields, len(row.get("repository", "")))
 

@@ -14,7 +14,17 @@ from .full_discovery_client import (
     cluster_kubectl_client as _cluster_kubectl_client,
 )
 from .full_discovery_client import (
+    discover_cluster_namespace_items as _discover_cluster_namespace_items,
+)
+from .full_discovery_client import (
+    discover_cluster_namespace_labels as _discover_cluster_namespace_labels,
+)
+from .full_discovery_client import (
     discover_cluster_namespaces as _discover_cluster_namespaces,
+)
+from .full_discovery_client import (
+    namespace_item_labels,
+    namespace_item_name,
 )
 from .full_discovery_inventory import config_inventory_by_namespace, discovered_namespace_rows
 from .full_discovery_namespaces import (
@@ -46,6 +56,21 @@ def cluster_kubectl_client(
 
 def discover_cluster_namespaces(args: argparse.Namespace) -> list[str]:
     return _discover_cluster_namespaces(args, client_class=KubectlClient)
+
+
+def discover_cluster_namespace_labels(args: argparse.Namespace) -> dict[str, dict[str, str]]:
+    return _discover_cluster_namespace_labels(args, client_class=KubectlClient)
+
+
+def discover_cluster_namespace_inventory(args: argparse.Namespace) -> tuple[list[str], dict[str, dict[str, str]]]:
+    namespace_items = _discover_cluster_namespace_items(args, client_class=KubectlClient)
+    namespaces = sorted(namespace_item_name(item) for item in namespace_items if namespace_item_name(item))
+    labels = {
+        name: item_labels
+        for item in namespace_items
+        if (name := namespace_item_name(item)) and (item_labels := namespace_item_labels(item))
+    }
+    return namespaces, labels
 
 
 def inspect_discovered_namespaces(
@@ -80,7 +105,7 @@ def discover_full_inventory(args: argparse.Namespace, *, generated_at: datetime)
     reports_dir = Path(getattr(args, "full_reports_dir", "") or DEFAULT_FULL_DISCOVERY_REPORTS_DIR) / slug_name(cluster)
     ensure_dir(reports_dir)
 
-    namespaces = discover_cluster_namespaces(args)
+    namespaces, namespace_labels = discover_cluster_namespace_inventory(args)
     if not namespaces:
         eprint(f"[kmap] warning: no namespaces discovered for cluster {cluster}")
         return 0
@@ -90,6 +115,7 @@ def discover_full_inventory(args: argparse.Namespace, *, generated_at: datetime)
         cluster,
         namespaces,
         inventory_index,
+        labels_by_namespace=namespace_labels,
         tool_config=getattr(args, "kmap_tool_config", {}),
     )
     namespace_rows = enrich_inventory_rows_from_repositories(namespace_rows, getattr(args, "kmap_tool_config", {}))
@@ -117,6 +143,8 @@ def discover_full_inventory(args: argparse.Namespace, *, generated_at: datetime)
 
 __all__ = [
     "DEFAULT_FULL_DISCOVERY_REPORTS_DIR",
+    "discover_cluster_namespace_inventory",
+    "discover_cluster_namespace_labels",
     "discover_cluster_namespaces",
     "discover_full_inventory",
     "discovered_namespace_rows",

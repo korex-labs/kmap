@@ -23,7 +23,7 @@ def test_render_cluster_reports_writes_aggregate_json_and_html(tmp_path):
   "cluster": "cluster-a",
   "fragment_id": "team-a",
   "namespaces": [
-    {"cluster": "cluster-a", "namespace": "api-prod", "stage": "prod", "product": "demo", "product_title": "Demo Payments", "repository": "https://git.example/api", "owner_team": "Ops"}
+    {"cluster": "cluster-a", "namespace": "api-prod", "stage": "prod", "labels": {"app": "api"}, "product": "demo", "product_title": "Demo Payments", "repository": "https://git.example/api", "owner_team": "Ops"}
   ],
   "repositories": [],
   "buckets": [
@@ -133,7 +133,7 @@ def test_cluster_html_renderers_include_cluster_title_and_back_navigation(tmp_pa
   "fragment_id": "team",
   "generated_at": "2026-05-19T09:30:00+00:00",
   "namespaces": [
-    {"cluster": "cluster-a", "namespace": "api-prod", "stage": "prod", "product": "demo", "product_title": "Demo Payments", "repository": "https://git.example/api", "owner_team": "Ops"}
+    {"cluster": "cluster-a", "namespace": "api-prod", "stage": "prod", "labels": {"app": "api"}, "product": "demo", "product_title": "Demo Payments", "repository": "https://git.example/api", "owner_team": "Ops"}
   ],
   "repositories": [],
   "buckets": []
@@ -151,6 +151,7 @@ def test_cluster_html_renderers_include_cluster_title_and_back_navigation(tmp_pa
     assert "<title>cluster-a Storage Buckets</title>" in buckets_html
     assert "<th>State</th>" in namespaces_html
     assert '<span class="state current"' in namespaces_html
+    assert '<span class="chip namespace-label">app=api</span>' in namespaces_html
     expected_nav = (
         '<nav><a href="../../clusters.html">Clusters</a><a href="namespaces.html">Namespaces</a>'
         '<a href="buckets.html">Buckets</a></nav>'

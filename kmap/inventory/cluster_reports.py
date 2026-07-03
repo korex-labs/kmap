@@ -107,6 +107,7 @@ def cluster_namespace_rows(inventory: ClusterInventory) -> list[InventoryRow]:
             repository_path=row.get("repository_path", ""),
             repository_group=row.get("repository_group", ""),
             repository_archived=row.get("repository_archived", ""),
+            labels=row.get("labels", {}) if isinstance(row.get("labels"), dict) else {},
         )
         for row in inventory.namespaces
     ]

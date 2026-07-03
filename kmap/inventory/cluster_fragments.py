@@ -113,11 +113,12 @@ def sorted_namespaces(rows: list[InventoryRow]) -> list[InventoryRow]:
     return sorted(rows, key=lambda row: (row.product.lower(), row.namespace.lower(), row.repository.lower()))
 
 
-def namespace_row_dict(row: InventoryRow) -> dict[str, str]:
+def namespace_row_dict(row: InventoryRow) -> dict[str, Any]:
     payload = {
         "cluster": row.cluster,
         "namespace": row.namespace,
         "stage": row.stage,
+        "labels": row.labels,
         "product": row.product,
         "product_title": row.product_title,
         "repository": row.repository,

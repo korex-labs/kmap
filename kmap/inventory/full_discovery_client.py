@@ -32,6 +32,24 @@ def cluster_kubectl_client(
 def discover_cluster_namespaces(
     args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
 ) -> list[str]:
+    namespaces = discover_cluster_namespace_items(args, client_class=client_class)
+    return sorted(namespace_item_name(item) for item in namespaces if namespace_item_name(item))
+
+
+def discover_cluster_namespace_labels(
+    args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
+) -> dict[str, dict[str, str]]:
+    namespaces = discover_cluster_namespace_items(args, client_class=client_class)
+    return {
+        name: labels
+        for item in namespaces
+        if (name := namespace_item_name(item)) and (labels := namespace_item_labels(item))
+    }
+
+
+def discover_cluster_namespace_items(
+    args: argparse.Namespace, *, client_class: type[KubectlClient] = KubectlClient
+) -> list[dict[str, Any]]:
     client = cluster_kubectl_client(args, client_class=client_class)
     ok, message = client.check_reachable()
     if not ok:
@@ -41,11 +59,25 @@ def discover_cluster_namespaces(
             f"- {client.cluster_label()}: {message}"
         )
     namespaces = client.get_json("namespace", namespace="")
-    return sorted(
-        str(item.get("metadata", {}).get("name") or "")
-        for item in namespaces.get("items") or []
-        if str(item.get("metadata", {}).get("name") or "")
-    )
+    return [item for item in namespaces.get("items") or [] if isinstance(item, dict)]
 
 
-__all__ = ["cluster_kubectl_client", "discover_cluster_namespaces"]
+def namespace_item_name(item: dict[str, Any]) -> str:
+    return str((item.get("metadata") or {}).get("name") or "")
+
+
+def namespace_item_labels(item: dict[str, Any]) -> dict[str, str]:
+    labels = (item.get("metadata") or {}).get("labels") or {}
+    if not isinstance(labels, dict):
+        return {}
+    return {str(key): str(value or "") for key, value in labels.items() if str(key)}
+
+
+__all__ = [
+    "cluster_kubectl_client",
+    "discover_cluster_namespace_items",
+    "discover_cluster_namespace_labels",
+    "discover_cluster_namespaces",
+    "namespace_item_labels",
+    "namespace_item_name",
+]

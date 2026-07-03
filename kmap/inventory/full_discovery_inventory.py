@@ -18,16 +18,22 @@ def discovered_namespace_rows(
     namespaces: list[str],
     inventory_index: dict[str, InventoryRow],
     tool_config: dict | None = None,
+    *,
+    labels_by_namespace: dict[str, dict[str, str]] | None = None,
 ) -> list[InventoryRow]:
     tool_config = tool_config or {}
+    labels_by_namespace = labels_by_namespace or {}
     repository_index = config_inventory_by_repository_id(inventory_index, tool_config)
     return [
-        inferred_inventory_row(
-            cluster=cluster,
-            namespace=namespace,
-            configured=inventory_index.get(namespace)
-            or configured_inventory_for_repository_id(namespace, repository_index, tool_config),
-            tool_config=tool_config,
+        replace(
+            inferred_inventory_row(
+                cluster=cluster,
+                namespace=namespace,
+                configured=inventory_index.get(namespace)
+                or configured_inventory_for_repository_id(namespace, repository_index, tool_config),
+                tool_config=tool_config,
+            ),
+            labels=labels_by_namespace.get(namespace, {}),
         )
         for namespace in namespaces
     ]

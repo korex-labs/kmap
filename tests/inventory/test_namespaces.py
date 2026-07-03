@@ -238,6 +238,26 @@ def test_render_inventory_html_escapes_values_and_links_repositories():
     assert "<th>Product</th><th>K8s cluster</th>" in rendered
 
 
+def test_render_inventory_html_shows_namespace_labels_as_badges():
+    rendered = render_inventory_html(
+        [
+            InventoryRow(
+                cluster="prod",
+                product="demo",
+                namespace="api-prod",
+                repository="",
+                owner_team="Ops",
+                labels={"app.kubernetes.io/name": "api", "empty": "", "<bad>": "x&y"},
+            )
+        ]
+    )
+
+    assert '<div class="namespace-labels">' in rendered
+    assert '<span class="chip namespace-label">&lt;bad&gt;=x&amp;y</span>' in rendered
+    assert '<span class="chip namespace-label">app.kubernetes.io/name=api</span>' in rendered
+    assert '<span class="chip namespace-label">empty</span>' in rendered
+
+
 def test_render_inventory_html_includes_summary_and_missing_markers():
     rendered = render_inventory_html(
         [

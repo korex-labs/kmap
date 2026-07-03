@@ -54,6 +54,8 @@ def inventory_page_styles() -> list[str]:
         "    th, td { padding: 0.72rem 0.85rem; }",
         "    th { font-size: 0.78rem; }",
         "    td code { font-size: 0.88rem; }",
+        "    .namespace-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }",
+        "    .namespace-label { margin-left: 0; font-size: 0.72rem; font-weight: 600; }",
         "    @media (max-width: 900px) { main { width: min(100% - 20px, 1500px); padding: 20px 0; } header { display: block; } .generated { text-align: left; margin-top: 8px; white-space: normal; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }",
     ]
 
@@ -112,7 +114,7 @@ def render_inventory_row(
         f'          <tr data-repository-archived="{str(archived).lower()}">'
         f"<td>{render_product_cell(row.product, row.product_title)}</td>"
         f"<td>{render_code_cell(row.cluster)}</td>"
-        f"<td>{render_code_cell(row.namespace)}</td>"
+        f"<td>{render_namespace_cell(row)}</td>"
         f"{state}"
         f"<td>{repository}</td>"
         f"<td>{render_cell(row.owner_team)}</td>"
@@ -142,6 +144,25 @@ def render_product_cell(product: str, product_title: str = "") -> str:
     return render_cell(product_title or product)
 
 
+def render_namespace_cell(row: InventoryRow) -> str:
+    labels = render_namespace_labels(row.labels)
+    return f"{render_code_cell(row.namespace)}{labels}"
+
+
+def render_namespace_labels(labels: dict[str, str]) -> str:
+    if not labels:
+        return ""
+    chips = "".join(
+        f'<span class="chip namespace-label">{escape(namespace_label_text(key, value))}</span>'
+        for key, value in sorted(labels.items())
+    )
+    return f'<div class="namespace-labels">{chips}</div>'
+
+
+def namespace_label_text(key: str, value: str) -> str:
+    return f"{key}={value}" if value else key
+
+
 __all__ = [
     "inventory_page_stats",
     "inventory_page_styles",
@@ -151,6 +172,8 @@ __all__ = [
     "inventory_table_rows",
     "render_inventory_html",
     "render_inventory_row",
+    "render_namespace_cell",
+    "render_namespace_labels",
     "render_product_cell",
     "render_repository",
     "render_state_cell",

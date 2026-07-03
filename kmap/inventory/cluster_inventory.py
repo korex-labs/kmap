@@ -25,7 +25,7 @@ class ClusterInventory:
     fragments: list[str]
     states: list[str]
     last_seen_at: str
-    namespaces: list[dict[str, str]]
+    namespaces: list[dict[str, Any]]
     repositories: list[dict[str, Any]]
     buckets: list[dict[str, str]]
 

@@ -1,6 +1,6 @@
 """Namespace inventory row collection from kmap product configs."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,7 @@ class InventoryRow:
     namespace: str
     repository: str
     owner_team: str
+    labels: dict[str, str] = field(default_factory=dict)
     product_title: str = ""
     stage: str = ""
     last_seen_at: str = ""
