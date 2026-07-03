@@ -2,13 +2,13 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from ..config import slug_name
 from ..io import dump_json, ensure_dir, load_required_json_file
 from .buckets import BucketUsageRow, bucket_row_dict
 from .cluster_fragments import CLUSTER_INVENTORY_SCHEMA_VERSION, namespace_row_dict
 from .namespaces import InventoryRow
+from .row_payloads import BucketRowPayload, SerializedRow, normalize_string_dict, row_quality
 
 
 def write_namespace_state_files(
@@ -68,8 +68,8 @@ def namespace_state_payload(
     generated_at: datetime,
     namespace_row: InventoryRow,
     bucket_rows: list[BucketUsageRow],
-    existing: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    existing: SerializedRow | None = None,
+) -> SerializedRow:
     existing = existing or {}
     generated = generated_at.isoformat(timespec="seconds")
     current_namespace = namespace_row_dict(namespace_row)
@@ -96,20 +96,20 @@ def namespace_state_payload(
     }
 
 
-def load_namespace_state(path: Path) -> dict[str, Any]:
+def load_namespace_state(path: Path) -> SerializedRow:
     payload = load_required_json_file(path)
     if int(payload.get("schema_version") or 0) != CLUSTER_INVENTORY_SCHEMA_VERSION:
         raise SystemExit(f"Unsupported cluster namespace state schema version in {path}")
     return payload
 
 
-def bucket_dict_with_last_seen(row: BucketUsageRow, last_seen_at: str) -> dict[str, str]:
+def bucket_dict_with_last_seen(row: BucketUsageRow, last_seen_at: str) -> BucketRowPayload:
     payload = bucket_row_dict(row)
     payload["last_seen_at"] = last_seen_at
     return payload
 
 
-def existing_bucket_dicts(existing: dict[str, Any]) -> list[dict[str, str]]:
+def existing_bucket_dicts(existing: SerializedRow) -> list[SerializedRow]:
     last_seen_at = str(existing.get("last_seen_at") or "")
     return [
         {**normalize_string_dict(row), "last_seen_at": str(row.get("last_seen_at") or last_seen_at)}
@@ -125,8 +125,8 @@ def namespace_state_path(output_dir: Path, cluster: str, namespace: str) -> Path
     return cluster_namespace_state_dir(output_dir, cluster) / f"{slug_name(namespace)}.json"
 
 
-def merge_bucket_dicts(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    merged: dict[tuple[str, str, str, str, str], dict[str, str]] = {}
+def merge_bucket_dicts(rows: list[SerializedRow]) -> list[SerializedRow]:
+    merged: dict[tuple[str, str, str, str, str], SerializedRow] = {}
     for row in rows:
         merged[bucket_key(row)] = row
     return sorted(
@@ -140,7 +140,7 @@ def merge_bucket_dicts(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     )
 
 
-def bucket_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
+def bucket_key(row: SerializedRow) -> tuple[str, str, str, str, str]:
     return (
         row.get("namespace", "").lower(),
         row.get("repository", "").lower(),
@@ -148,21 +148,6 @@ def bucket_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
         row.get("endpoint", "").lower(),
         row.get("source_var", "").lower(),
     )
-
-
-def normalize_string_dict(row: dict[str, Any]) -> dict[str, Any]:
-    return {str(key): normalize_row_value(key, value) for key, value in row.items()}
-
-
-def normalize_row_value(key: Any, value: Any) -> Any:
-    if key == "labels" and isinstance(value, dict):
-        return {str(label_key): str(label_value or "") for label_key, label_value in value.items() if str(label_key)}
-    return str(value or "")
-
-
-def row_quality(row: dict[str, Any]) -> tuple[int, int]:
-    valued_fields = sum(1 for key in ("repository", "owner_team", "product", "product_title", "stage") if row.get(key))
-    return (valued_fields, len(row.get("repository", "")))
 
 
 __all__ = [

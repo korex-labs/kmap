@@ -12,21 +12,21 @@ import yaml
 def safe_json_loads(raw: str, default: Any):
     try:
         return json.loads(raw)
-    except Exception:
+    except json.JSONDecodeError:
         return default
 
 
 def load_json_file(path: Path, default: Any):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return default
 
 
 def load_required_json_file(path: Path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise SystemExit(f"Invalid JSON file: {path}: {exc}") from exc
 
 
@@ -34,14 +34,14 @@ def load_yaml_file(path: Path, default: Any):
     try:
         data = read_yaml_file(path)
         return default if data is None else data
-    except Exception:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
         return default
 
 
 def load_required_yaml_file(path: Path) -> Dict[str, Any]:
     try:
         data = read_yaml_file(path)
-    except Exception as exc:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
         raise SystemExit(f"Invalid YAML file: {path}: {exc}") from exc
     if data is None:
         return {}

@@ -47,7 +47,7 @@ class KubectlClient:
             cp = run_cmd([*self.base(), "config", "current-context"], timeout=self.command_timeout_seconds())
             ctx = cp.stdout.strip()
             return ctx or "unknown-context"
-        except Exception:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
             return "unknown-context"
 
     def cluster_label(self) -> str:
@@ -68,7 +68,7 @@ class KubectlClient:
                 progress_failure=False,
                 progress=False,
             )
-        except Exception as exc:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             return False, str(exc)
         if cp.returncode == 0:
             return True, ""
@@ -105,7 +105,7 @@ class KubectlClient:
         try:
             cp = run_cmd(cmd, timeout=self.command_timeout_seconds())
             return safe_json_loads(cp.stdout, [])
-        except Exception:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
             return []
 
     def command_timeout_seconds(self) -> int:
@@ -148,7 +148,7 @@ class KubectlClient:
             if cp.returncode == 0:
                 return (cp.stdout or "").strip(), False
             return "", retryable_exec_failure(cp.returncode, cp.stderr or "")
-        except Exception:
+        except (subprocess.TimeoutExpired, OSError):
             return "", True
 
 

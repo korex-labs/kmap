@@ -14,6 +14,7 @@ from .buckets import (
     bucket_rows_from_artifact,
 )
 from .namespaces import InventoryRow, config_files, inventory_rows_for_config
+from .row_payloads import NamespaceRowPayload, RepositoryRowPayload, SerializedRow
 
 CLUSTER_INVENTORY_SCHEMA_VERSION = 1
 
@@ -56,7 +57,7 @@ def fragment_clusters(namespace_rows: list[InventoryRow], bucket_rows: list[Any]
     return clusters
 
 
-def write_cluster_fragment(output_dir: Path, cluster: str, fragment_id: str, fragment: dict[str, Any]) -> Path:
+def write_cluster_fragment(output_dir: Path, cluster: str, fragment_id: str, fragment: SerializedRow) -> Path:
     output_file = cluster_fragment_path(output_dir, cluster, fragment_id)
     ensure_dir(output_file.parent)
     dump_json(output_file, fragment)
@@ -96,7 +97,7 @@ def cluster_fragment_payload(
     generated_at: datetime,
     namespace_rows: list[InventoryRow],
     bucket_rows,
-) -> dict[str, Any]:
+) -> SerializedRow:
     repositories = repositories_for_namespaces(namespace_rows)
     return {
         "schema_version": CLUSTER_INVENTORY_SCHEMA_VERSION,
@@ -113,7 +114,7 @@ def sorted_namespaces(rows: list[InventoryRow]) -> list[InventoryRow]:
     return sorted(rows, key=lambda row: (row.product.lower(), row.namespace.lower(), row.repository.lower()))
 
 
-def namespace_row_dict(row: InventoryRow) -> dict[str, Any]:
+def namespace_row_dict(row: InventoryRow) -> NamespaceRowPayload:
     payload = {
         "cluster": row.cluster,
         "namespace": row.namespace,
@@ -134,7 +135,7 @@ def namespace_row_dict(row: InventoryRow) -> dict[str, Any]:
     return payload
 
 
-def repositories_for_namespaces(rows: list[InventoryRow]) -> list[dict[str, Any]]:
+def repositories_for_namespaces(rows: list[InventoryRow]) -> list[RepositoryRowPayload]:
     namespaces_by_repo: dict[str, list[str]] = defaultdict(list)
     metadata_by_repo: dict[str, InventoryRow] = {}
     for row in rows:

@@ -1,5 +1,7 @@
 import subprocess
 
+import pytest
+
 from kmap.kubernetes import client as kubernetes_client
 from kmap.kubernetes.client import (
     KubectlClient,
@@ -77,12 +79,23 @@ def test_kubectl_client_check_reachable_reports_failure(monkeypatch):
 
 def test_kubectl_client_check_reachable_reports_exception(monkeypatch):
     def fail_run_cmd(cmd, **kwargs):
-        raise RuntimeError("kubectl missing")
+        raise OSError("kubectl missing")
 
     monkeypatch.setattr(kubernetes_client, "run_cmd", fail_run_cmd)
     client = KubectlClient(kubectl="kubectlx", kubeconfig="")
 
     assert client.check_reachable() == (False, "kubectl missing")
+
+
+def test_kubectl_client_check_reachable_does_not_swallow_unexpected_errors(monkeypatch):
+    def fail_run_cmd(cmd, **kwargs):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(kubernetes_client, "run_cmd", fail_run_cmd)
+    client = KubectlClient(kubectl="kubectlx", kubeconfig="")
+
+    with pytest.raises(RuntimeError, match="bug"):
+        client.check_reachable()
 
 
 def test_completed_process_output_prefers_stderr_then_stdout_then_exit_code():
@@ -119,7 +132,7 @@ def test_kubectl_client_current_context_handles_empty_or_failed_command(monkeypa
     assert client.current_context() == "unknown-context"
 
     def fail_run_cmd(cmd, **kwargs):
-        raise RuntimeError("kubectl unavailable")
+        raise OSError("kubectl unavailable")
 
     monkeypatch.setattr(kubernetes_client, "run_cmd", fail_run_cmd)
     assert client.current_context() == "unknown-context"
@@ -196,8 +209,8 @@ def test_kubectl_client_helm_list_uses_context_and_decodes_output(monkeypatch):
 
 
 def test_kubectl_client_helm_list_returns_empty_on_failure(monkeypatch):
-    def fail_run_cmd(cmd):
-        raise RuntimeError("helm failed")
+    def fail_run_cmd(cmd, **kwargs):
+        raise OSError("helm failed")
 
     monkeypatch.setattr(kubernetes_client.shutil, "which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr(kubernetes_client, "run_cmd", fail_run_cmd)

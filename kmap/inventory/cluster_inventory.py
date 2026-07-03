@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from ..config import slug_name
 from ..io import load_required_json_file
@@ -17,6 +16,7 @@ from .cluster_inventory_rows import (
     sorted_namespace_rows,
 )
 from .cluster_state import load_namespace_state
+from .row_payloads import BucketRowPayload, NamespaceRowPayload, RepositoryRowPayload, SerializedRow
 
 
 @dataclass(frozen=True)
@@ -25,9 +25,9 @@ class ClusterInventory:
     fragments: list[str]
     states: list[str]
     last_seen_at: str
-    namespaces: list[dict[str, Any]]
-    repositories: list[dict[str, Any]]
-    buckets: list[dict[str, str]]
+    namespaces: list[NamespaceRowPayload]
+    repositories: list[RepositoryRowPayload]
+    buckets: list[BucketRowPayload]
 
 
 def load_cluster_inventories(output_dir: Path) -> list[ClusterInventory]:
@@ -47,8 +47,8 @@ def cluster_dirs(output_dir: Path, *, cluster: str = "") -> list[Path]:
 def load_cluster_inventory(cluster_dir: Path) -> ClusterInventory:
     fragment_files = sorted((cluster_dir / "fragments").glob("*.json"))
     state_files = sorted((cluster_dir / "state" / "namespaces").glob("*.json"))
-    namespace_rows: dict[str, dict[str, str]] = {}
-    bucket_rows: dict[tuple[str, str, str, str, str], dict[str, str]] = {}
+    namespace_rows: dict[str, NamespaceRowPayload] = {}
+    bucket_rows: dict[tuple[str, str, str, str, str], BucketRowPayload] = {}
     cluster_name, fragments, fragment_seen = load_cluster_fragments(
         fragment_files,
         namespace_rows=namespace_rows,
@@ -77,8 +77,8 @@ def load_cluster_inventory(cluster_dir: Path) -> ClusterInventory:
 def load_cluster_fragments(
     fragment_files: list[Path],
     *,
-    namespace_rows: dict[str, dict[str, str]],
-    bucket_rows: dict[tuple[str, str, str, str, str], dict[str, str]],
+    namespace_rows: dict[str, NamespaceRowPayload],
+    bucket_rows: dict[tuple[str, str, str, str, str], BucketRowPayload],
     fallback_cluster: str,
 ) -> tuple[str, list[str], list[str]]:
     cluster_name = ""
@@ -99,8 +99,8 @@ def load_cluster_fragments(
 def load_cluster_namespace_states(
     state_files: list[Path],
     *,
-    namespace_rows: dict[str, dict[str, str]],
-    bucket_rows: dict[tuple[str, str, str, str, str], dict[str, str]],
+    namespace_rows: dict[str, NamespaceRowPayload],
+    bucket_rows: dict[tuple[str, str, str, str, str], BucketRowPayload],
     fallback_cluster: str,
 ) -> tuple[str, list[str], list[str]]:
     cluster_name = ""
@@ -130,14 +130,14 @@ def unique_sorted(values: list[str]) -> list[str]:
     return sorted(set(values))
 
 
-def load_cluster_fragment(fragment_file: Path) -> dict[str, Any]:
+def load_cluster_fragment(fragment_file: Path) -> SerializedRow:
     payload = load_required_json_file(fragment_file)
     if int(payload.get("schema_version") or 0) != CLUSTER_INVENTORY_SCHEMA_VERSION:
         raise SystemExit(f"Unsupported cluster inventory schema version in {fragment_file}")
     return payload
 
 
-def cluster_inventory_payload(inventory: ClusterInventory, *, generated_at: datetime) -> dict[str, Any]:
+def cluster_inventory_payload(inventory: ClusterInventory, *, generated_at: datetime) -> SerializedRow:
     return {
         "schema_version": CLUSTER_INVENTORY_SCHEMA_VERSION,
         "cluster": inventory.cluster,

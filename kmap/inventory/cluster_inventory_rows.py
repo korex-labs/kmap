@@ -1,16 +1,25 @@
 """Row normalization and aggregation helpers for cluster inventory."""
 
 from collections import defaultdict
-from typing import Any
+
+from .row_payloads import (
+    BucketRowPayload,
+    NamespaceRowPayload,
+    RepositoryRowPayload,
+    SerializedRow,
+    namespace_row_with_labels,
+    normalize_string_dict,
+    row_quality,
+)
 
 
-def sorted_namespace_rows(namespace_rows: dict[str, dict[str, str]]) -> list[dict[str, str]]:
+def sorted_namespace_rows(namespace_rows: dict[str, NamespaceRowPayload]) -> list[NamespaceRowPayload]:
     return sorted(namespace_rows.values(), key=lambda row: (row.get("product", ""), row.get("namespace", "")))
 
 
 def sorted_bucket_rows(
-    bucket_rows: dict[tuple[str, str, str, str, str], dict[str, str]],
-) -> list[dict[str, str]]:
+    bucket_rows: dict[tuple[str, str, str, str, str], BucketRowPayload],
+) -> list[BucketRowPayload]:
     return sorted(
         bucket_rows.values(),
         key=lambda row: (
@@ -22,13 +31,13 @@ def sorted_bucket_rows(
     )
 
 
-def rows_with_last_seen(rows: list[dict[str, Any]], last_seen_at: str) -> list[dict[str, Any]]:
+def rows_with_last_seen(rows: list[SerializedRow], last_seen_at: str) -> list[SerializedRow]:
     if not last_seen_at:
         return rows
     return [{**row, "last_seen_at": row.get("last_seen_at") or last_seen_at} for row in rows]
 
 
-def merge_namespace_rows(target: dict[str, dict[str, str]], rows: list[dict[str, Any]]) -> None:
+def merge_namespace_rows(target: dict[str, NamespaceRowPayload], rows: list[SerializedRow]) -> None:
     for row in rows:
         namespace = str(row.get("namespace") or "")
         if not namespace:
@@ -42,36 +51,15 @@ def merge_namespace_rows(target: dict[str, dict[str, str]], rows: list[dict[str,
 
 
 def merge_bucket_rows(
-    target: dict[tuple[str, str, str, str, str], dict[str, str]],
-    rows: list[dict[str, Any]],
+    target: dict[tuple[str, str, str, str, str], BucketRowPayload],
+    rows: list[SerializedRow],
 ) -> None:
     for row in rows:
         normalized = normalize_string_dict(row)
         target.setdefault(bucket_key(normalized), normalized)
 
 
-def normalize_string_dict(row: dict[str, Any]) -> dict[str, Any]:
-    return {str(key): normalize_row_value(key, value) for key, value in row.items()}
-
-
-def normalize_row_value(key: Any, value: Any) -> Any:
-    if key == "labels" and isinstance(value, dict):
-        return {str(label_key): str(label_value or "") for label_key, label_value in value.items() if str(label_key)}
-    return str(value or "")
-
-
-def namespace_row_with_labels(row: dict[str, Any], existing: dict[str, Any] | None) -> dict[str, Any]:
-    if row.get("labels") or not existing or not existing.get("labels"):
-        return row
-    return {**row, "labels": existing["labels"]}
-
-
-def row_quality(row: dict[str, Any]) -> tuple[int, int]:
-    valued_fields = sum(1 for key in ("repository", "owner_team", "product", "product_title", "stage") if row.get(key))
-    return (valued_fields, len(row.get("repository", "")))
-
-
-def bucket_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
+def bucket_key(row: SerializedRow) -> tuple[str, str, str, str, str]:
     return (
         row.get("namespace", "").lower(),
         row.get("repository", "").lower(),
@@ -81,8 +69,8 @@ def bucket_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
     )
 
 
-def repositories_for_cluster_namespaces(namespaces: list[dict[str, str]]) -> list[dict[str, Any]]:
-    by_repo: dict[str, list[dict[str, str]]] = defaultdict(list)
+def repositories_for_cluster_namespaces(namespaces: list[NamespaceRowPayload]) -> list[RepositoryRowPayload]:
+    by_repo: dict[str, list[NamespaceRowPayload]] = defaultdict(list)
     for row in namespaces:
         repository = row.get("repository", "")
         if repository:

@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import pytest
 
+from kmap import io as io_module
 from kmap.io import (
     dump_json,
     ensure_dir,
@@ -52,6 +55,22 @@ def test_io_helpers_return_defaults_for_optional_loader_failures(tmp_path):
     assert load_json_file(missing_json, {"fallback": True}) == {"fallback": True}
     assert load_yaml_file(bad_yaml, {"fallback": True}) == {"fallback": True}
     assert load_yaml_file(empty_yaml, {"fallback": True}) == {"fallback": True}
+
+
+def test_optional_loaders_do_not_swallow_unexpected_errors(monkeypatch):
+    def fail_json_loads(raw):
+        raise RuntimeError("bug")
+
+    def fail_read_yaml_file(path):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(io_module.json, "loads", fail_json_loads)
+    monkeypatch.setattr(io_module, "read_yaml_file", fail_read_yaml_file)
+
+    with pytest.raises(RuntimeError, match="bug"):
+        safe_json_loads("{}", {})
+    with pytest.raises(RuntimeError, match="bug"):
+        load_yaml_file(Path("config.yaml"), {})
 
 
 def test_required_yaml_loader_handles_empty_and_non_mapping_files(tmp_path):

@@ -17,6 +17,7 @@ from .cluster_inventory import (
 )
 from .html import render_code_cell, render_inventory_page
 from .namespaces import InventoryRow, render_inventory_html
+from .row_payloads import BucketRowPayload, NamespaceRowPayload
 
 
 def render_cluster_reports(
@@ -92,49 +93,51 @@ def render_cluster_buckets_html(
 
 
 def cluster_namespace_rows(inventory: ClusterInventory) -> list[InventoryRow]:
-    return [
-        InventoryRow(
-            cluster=row.get("cluster", "") or inventory.cluster,
-            product=row.get("product", ""),
-            namespace=row.get("namespace", ""),
-            repository=row.get("repository", ""),
-            owner_team=row.get("owner_team", ""),
-            product_title=row.get("product_title", ""),
-            stage=row.get("stage", ""),
-            last_seen_at=row.get("last_seen_at", ""),
-            repository_id=row.get("repository_id", ""),
-            repository_name=row.get("repository_name", ""),
-            repository_path=row.get("repository_path", ""),
-            repository_group=row.get("repository_group", ""),
-            repository_archived=row.get("repository_archived", ""),
-            labels=row.get("labels", {}) if isinstance(row.get("labels"), dict) else {},
-        )
-        for row in inventory.namespaces
-    ]
+    return [cluster_namespace_row(row, fallback_cluster=inventory.cluster) for row in inventory.namespaces]
+
+
+def cluster_namespace_row(row: NamespaceRowPayload, *, fallback_cluster: str) -> InventoryRow:
+    return InventoryRow(
+        cluster=row.get("cluster", "") or fallback_cluster,
+        product=row.get("product", ""),
+        namespace=row.get("namespace", ""),
+        repository=row.get("repository", ""),
+        owner_team=row.get("owner_team", ""),
+        product_title=row.get("product_title", ""),
+        stage=row.get("stage", ""),
+        last_seen_at=row.get("last_seen_at", ""),
+        repository_id=row.get("repository_id", ""),
+        repository_name=row.get("repository_name", ""),
+        repository_path=row.get("repository_path", ""),
+        repository_group=row.get("repository_group", ""),
+        repository_archived=row.get("repository_archived", ""),
+        labels=row.get("labels", {}) if isinstance(row.get("labels"), dict) else {},
+    )
 
 
 def cluster_bucket_rows(inventory: ClusterInventory) -> list[BucketUsageRow]:
-    return [
-        BucketUsageRow(
-            bucket=row.get("bucket", ""),
-            endpoint=row.get("endpoint", ""),
-            confidence=row.get("confidence", ""),
-            cluster=row.get("cluster", "") or inventory.cluster,
-            product=row.get("product", ""),
-            namespace=row.get("namespace", ""),
-            project=row.get("project", ""),
-            workload=row.get("workload", ""),
-            source=row.get("source", ""),
-            source_var=row.get("source_var", ""),
-            repository=row.get("repository", ""),
-            owner_team=row.get("owner_team", ""),
-            report_key=row.get("report_key", ""),
-            product_title=row.get("product_title", ""),
-            last_seen_at=row.get("last_seen_at", ""),
-            repository_archived=row.get("repository_archived", ""),
-        )
-        for row in inventory.buckets
-    ]
+    return [cluster_bucket_row(row, fallback_cluster=inventory.cluster) for row in inventory.buckets]
+
+
+def cluster_bucket_row(row: BucketRowPayload, *, fallback_cluster: str) -> BucketUsageRow:
+    return BucketUsageRow(
+        bucket=row.get("bucket", ""),
+        endpoint=row.get("endpoint", ""),
+        confidence=row.get("confidence", ""),
+        cluster=row.get("cluster", "") or fallback_cluster,
+        product=row.get("product", ""),
+        namespace=row.get("namespace", ""),
+        project=row.get("project", ""),
+        workload=row.get("workload", ""),
+        source=row.get("source", ""),
+        source_var=row.get("source_var", ""),
+        repository=row.get("repository", ""),
+        owner_team=row.get("owner_team", ""),
+        report_key=row.get("report_key", ""),
+        product_title=row.get("product_title", ""),
+        last_seen_at=row.get("last_seen_at", ""),
+        repository_archived=row.get("repository_archived", ""),
+    )
 
 
 def cluster_report_nav_links() -> list[tuple[str, str]]:
