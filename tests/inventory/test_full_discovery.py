@@ -11,6 +11,7 @@ from kmap.inventory.full_discovery import (
     discover_full_inventory,
     discovered_namespace_rows,
 )
+from kmap.inventory.full_discovery_client import namespace_item_labels, namespace_item_name
 from kmap.inventory.full_discovery_namespaces import (
     NamespacePersistenceContext,
     inspect_and_persist_namespace,
@@ -80,6 +81,37 @@ def test_discover_cluster_namespace_labels_reads_live_namespace_metadata(monkeyp
     assert discover_cluster_namespace_labels(full_args(tmp_path)) == {
         "api-prod": {"app.kubernetes.io/name": "api", "empty": ""}
     }
+
+
+def test_namespace_item_label_helpers_tolerate_malformed_metadata():
+    assert namespace_item_name({}) == ""
+    assert namespace_item_name({"metadata": {"name": 123}}) == "123"
+    assert namespace_item_labels({}) == {}
+    assert namespace_item_labels({"metadata": {"labels": "bad"}}) == {}
+    assert namespace_item_labels({"metadata": {"labels": {"": "skip", "enabled": True, "revision": 3}}}) == {
+        "enabled": "True",
+        "revision": "3",
+    }
+
+
+def test_discover_cluster_namespace_labels_skips_namespaces_without_valid_labels(monkeypatch, tmp_path):
+    class MalformedLabelClient(FakeClient):
+        def get_json(self, kind, namespace=None):
+            if kind != "namespace":
+                return {"items": []}
+            return {
+                "items": [
+                    {"metadata": {"name": "missing-labels"}},
+                    {"metadata": {"name": "bad-labels", "labels": "bad"}},
+                    {"metadata": {"name": "good-labels", "labels": {"team": "platform"}}},
+                    {"metadata": {"labels": {"ignored": "missing-name"}}},
+                    "bad-item",
+                ]
+            }
+
+    monkeypatch.setattr(full_discovery, "KubectlClient", MalformedLabelClient)
+
+    assert discover_cluster_namespace_labels(full_args(tmp_path)) == {"good-labels": {"team": "platform"}}
 
 
 def test_discover_cluster_namespaces_fails_when_cluster_unreachable(monkeypatch, tmp_path):
